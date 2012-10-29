@@ -1,0 +1,38 @@
+MODELE <hydrogene-120915-1823> : DONNEES GLOBALES
+--------------------------------
+TAILLES : 
+nombre de sommets : 168813
+nombre de faces   : 337368
+forme             : carre [-1,+1]x[-1,+1]
+subdivision       : inhomogene
+--------------------------------
+INFORMATIONS GLOBALES : 
+ALTITUDES : 
+	min : 0.0059
+	moy : 0.0651
+	max : 0.1543
+SURFACES  : 
+	min : 2.71e-08
+	moy : 2.57e-05
+	max : 4.43e-04
+COURBURES  : 
+	min : -3.00e-03
+	moy : +2.65e-06
+	max : +3.67e-03
+PENTES    : 
+	min : +0.00e+00
+	moy : +3.07e-01
+	max : +1.00e+00
+DRAINANGE : 
+	min : 0
+	moy : 760
+	max : 140327
+--------------------------------
+VOLUMES PAGES : 
+page 1 : 8.1 Mo	- (coord. sommets / indices faces)
+page 2 : 12.1 Mo	- (vect. normales sommets / faces)
+page 3 : 12.1 Mo	- (vect. pentes   sommets / faces)
+page 4 : 14.2 Mo	- (scal. drainage, courbure, surface, pente pour sommets et faces )
+page 5 : 12.1 Mo	- (topologie de connexion, voisinage faces/sommets)
+TOTAL  : 58.7 Mo
+--------------------------------
