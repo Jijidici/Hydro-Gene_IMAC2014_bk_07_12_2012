@@ -13,6 +13,15 @@
 
 using namespace std;
 
+typedef struct{
+	double top;
+	double bottom;
+	double left;
+	double right;
+	double near;
+	double far;
+}Cube;
+
 static const size_t WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
 static const size_t BYTES_PER_PIXEL = 32;
 
@@ -73,6 +82,7 @@ int main(int argc, char** argv){
     glEnable(GL_DEPTH_TEST);
     
     // Creation des VBO, VAO
+    
     
     // Creation des Shaders
     
