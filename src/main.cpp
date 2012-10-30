@@ -184,10 +184,15 @@ int main(int argc, char** argv) {
 	glm::mat4 P = glm::perspective(90.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 1000.f);
 	glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
 	glm::mat4 VP = P*V;
-
+	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
-
+	
+	//Creation des ressources d'evenements
+	float offsetViewX = 0;
+	float offsetViewY = 0;
+	int isArrowKeyPressed = 0; //1:left || 2:right || 3:up || 4:down
+	
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
 	/* ************************************************************* */
@@ -206,8 +211,9 @@ int main(int argc, char** argv) {
 		for(int i=0;i<11;++i){
 			for(int j=0;j<11;++j){
 				glm::mat4 MVP = glm::translate(VP, glm::vec3(i*2.f - 10.f, j*2.f - 10.f, -10.f));
+				MVP = glm::translate(MVP, glm::vec3(offsetViewX, offsetViewY, 0.f));
 				glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
-
+				
 				glBindVertexArray(cubeVAO);
 				glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
 				glBindVertexArray(0);
@@ -230,7 +236,38 @@ int main(int argc, char** argv) {
 						case SDLK_q:
 							done=true;
 						break;
-					
+						
+						case SDLK_LEFT:
+							isArrowKeyPressed = 1;
+						break;
+						
+						case SDLK_RIGHT:
+							isArrowKeyPressed = 2;
+						break;
+						
+						case SDLK_UP:
+							isArrowKeyPressed = 3;
+						break;
+						
+						case SDLK_DOWN:
+							isArrowKeyPressed = 4;
+						break;
+						
+						default:
+						break;
+					}
+				break;
+				
+				case SDL_KEYUP:
+					switch(e.key.keysym.sym){
+						
+						case SDLK_LEFT:						
+						case SDLK_RIGHT:
+						case SDLK_UP:
+						case SDLK_DOWN:
+							isArrowKeyPressed = 0;
+						break;
+						
 						default:
 						break;
 					}
@@ -242,7 +279,26 @@ int main(int argc, char** argv) {
 		}
 
 		//Idle
-		
+		switch(isArrowKeyPressed){
+			case 1:
+				offsetViewX -= 0.05;
+			break;
+			
+			case 2:
+				offsetViewX += 0.05;
+			break;
+			
+			case 3:
+				offsetViewY += 0.05;
+			break;
+			
+			case 4:
+				offsetViewY -= 0.05;
+			break;
+			
+			default:
+			break;
+		}
 		
 		// Gestion compteur
 		end = SDL_GetTicks();
