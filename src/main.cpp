@@ -14,16 +14,17 @@
 using namespace std;
 
 typedef struct{
-	double top;
-	double bottom;
 	double left;
 	double right;
-	double near;
+	double bottom;
+	double top;
 	double far;
+	double near;
 }Cube;
 
 static const size_t WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
 static const size_t BYTES_PER_PIXEL = 32;
+static const size_t POSITION_LOCATION = 0;
 
 int main(int argc, char** argv){
 	
@@ -82,11 +83,108 @@ int main(int argc, char** argv){
     glEnable(GL_DEPTH_TEST);
     
     // Creation des VBO, VAO
+    Cube aCube;
+    aCube.left = -0.5;
+    aCube.right = 0.5;
+    aCube.bottom = -0.5;
+    aCube.top = 0.5;
+    aCube.far = -0.5;
+    aCube.near = 0.5;
     
+    double cubeVertices[] = {//
+    		aCube.left, aCube.bottom, aCube.near,
+    		aCube.right, aCube.bottom, aCube.near,
+    		aCube.left, aCube.top, aCube.near,
+    		
+    		aCube.right, aCube.bottom, aCube.near,
+    		aCube.right, aCube.top, aCube.near,
+    		aCube.left, aCube.top, aCube.near,
+    		
+    		//
+    		aCube.right, aCube.bottom, aCube.near,
+    		aCube.right, aCube.bottom, aCube.far,
+    		aCube.right, aCube.top, aCube.far,
+    		
+    		aCube.right, aCube.bottom, aCube.near,
+    		aCube.right, aCube.top, aCube.near,
+    		aCube.right, aCube.bottom, aCube.far,
+    		
+    		//
+    		aCube.left, aCube.top, aCube.near,
+    		aCube.right, aCube.top, aCube.near,
+    		aCube.right, aCube.top, aCube.far,
+    		
+    		aCube.left, aCube.top, aCube.near,
+    		aCube.right, aCube.top, aCube.far,
+    		aCube.left, aCube.top, aCube.far,
+    		
+    		////
+    		aCube.left, aCube.bottom, aCube.far,
+    		aCube.right, aCube.bottom, aCube.far,
+    		aCube.left, aCube.top, aCube.far,
+    		
+    		aCube.right, aCube.bottom, aCube.far,
+    		aCube.right, aCube.top, aCube.far,
+    		aCube.left, aCube.top, aCube.far,
+    		
+    		//
+    		aCube.left, aCube.bottom, aCube.near,
+    		aCube.left, aCube.bottom, aCube.far,
+    		aCube.left, aCube.top, aCube.far,
+    		
+    		aCube.left, aCube.bottom, aCube.near,
+    		aCube.left, aCube.top, aCube.near,
+    		aCube.left, aCube.bottom, aCube.far,
+    		
+    		//
+    		aCube.left, aCube.bottom, aCube.near,
+    		aCube.right, aCube.bottom, aCube.near,
+    		aCube.right, aCube.bottom, aCube.far,
+    		
+    		aCube.left, aCube.bottom, aCube.near,
+    		aCube.right, aCube.bottom, aCube.far,
+    		aCube.left, aCube.bottom, aCube.far,
+    };
+    GLuint nbVertices = 36;
+    
+    GLuint cubeVBO = 0;
+    glGenBuffers(1, &cubeVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    	glBufferData(GL_ARRAY_BUFFER, nbVertices*3*sizeof(GL_DOUBLE), cubeVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    GLuint cubeVAO = 0;
+    glGenVertexArrays(1, &cubeVAO);
+    glBindVertexArray(cubeVAO);
+    	glEnableVertexAttribArray(POSITION_LOCATION);
+    	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    		glVertexAttribPointer(
+    			POSITION_LOCATION,
+    			3,
+    			GL_DOUBLE,
+    			GL_FALSE,
+    			3*sizeof(GL_DOUBLE),
+    			0
+    		);
+    	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     
     // Creation des Shaders
+    GLuint program = imac2gl3::loadProgram("shaders/transform.vs.glsl", "shaders/basic.fs.glsl");
+    if(!program){
+    	glDeleteBuffers(1, &cubeVBO);
+   	glDeleteVertexArrays(1, &cubeVAO);
+    	return EXIT_FAILURE;
+    }
+    glUseProgram(program);
     
     //Creation des matrices
+	GLuint MVPLocation = glGetUniformLocation(program, "uMVPMatrix");
+    
+    glm::mat4 P = glm::perspective(120.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, -0.1f, -1000.f);
+    glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
+    glm::mat4 MVP = glm::translate(P*V, glm::vec3(0.f, 0.f, -2.f));
+	
 	
 	 // Boucle principale
     bool done = false;
@@ -98,6 +196,11 @@ int main(int argc, char** argv){
         SDL_GL_SwapBuffers();
         
         //Dessin
+        glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
+        
+        glBindVertexArray(cubeVAO);
+        	glDrawArrays(GL_TRIANGLES, 0, nbVertices);
+        glBindVertexArray(0);
         
         // Boucle de gestion des évenements
         SDL_Event e;
@@ -127,7 +230,8 @@ int main(int argc, char** argv){
     }
     
     // Destruction des ressources OpenGL
-    
+    glDeleteBuffers(1, &cubeVBO);
+    glDeleteVertexArrays(1, &cubeVAO);
     
     //Desallocation
     delete[] tabV;
