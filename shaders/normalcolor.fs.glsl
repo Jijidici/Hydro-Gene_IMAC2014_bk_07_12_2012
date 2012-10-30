@@ -3,9 +3,9 @@
 in vec3 vNormal;
 in vec2 vTexCoords;
 
-out vec3 fFragColor;
+out vec4 fFragColor;
 
 void main() {
-    fFragColor = vNormal;
+    fFragColor = vec4(vNormal, 1.f);
 }
 
