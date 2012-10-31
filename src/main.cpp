@@ -189,9 +189,20 @@ int main(int argc, char** argv) {
 	glEnable(GL_DEPTH_TEST);
 	
 	//Creation des ressources d'evenements
-	float offsetViewX = 0;
-	float offsetViewY = 0;
-	int isArrowKeyPressed = 0; //1:left || 2:right || 3:up || 4:down
+	float offsetViewX = 0.;
+	float offsetViewY = 0.;
+	float offsetViewZ = 0.;
+	float angleViewY = 0.;
+	float tmpAngleViewY = 0.;
+	float angleViewX = 0.;
+	float tmpAngleViewX = 0.;
+	int isArrowKeyUpPressed = 0;
+	int isArrowKeyDownPressed = 0;
+	int isArrowKeyLeftPressed = 0;
+	int isArrowKeyRightPressed = 0;
+	int isLeftClicPressed = 0;
+	int savedClicX = -1;
+	int savedClicY = -1;
 	
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
@@ -210,8 +221,11 @@ int main(int argc, char** argv) {
 		// Dessin
 		for(int i=0;i<11;++i){
 			for(int j=0;j<11;++j){
-				glm::mat4 MVP = glm::translate(VP, glm::vec3(i*2.f - 10.f, j*2.f - 10.f, -10.f));
-				MVP = glm::translate(MVP, glm::vec3(offsetViewX, offsetViewY, 0.f));
+				glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
+				MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -10.f)); //MOVE AWWAY FROM THE CAMERA
+				MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
+				MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
+				MVP = glm::translate(MVP, glm::vec3(i*2.f - 10.f, j*2.f - 10.f, 0.f));
 				glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
 				
 				glBindVertexArray(cubeVAO);
@@ -238,19 +252,19 @@ int main(int argc, char** argv) {
 						break;
 						
 						case SDLK_LEFT:
-							isArrowKeyPressed = 1;
+							isArrowKeyLeftPressed = 1;
 						break;
 						
 						case SDLK_RIGHT:
-							isArrowKeyPressed = 2;
+							isArrowKeyRightPressed = 1;
 						break;
 						
 						case SDLK_UP:
-							isArrowKeyPressed = 3;
+							isArrowKeyUpPressed = 1;
 						break;
 						
 						case SDLK_DOWN:
-							isArrowKeyPressed = 4;
+							isArrowKeyDownPressed = 1;
 						break;
 						
 						default:
@@ -260,16 +274,62 @@ int main(int argc, char** argv) {
 				
 				case SDL_KEYUP:
 					switch(e.key.keysym.sym){
+						case SDLK_LEFT:
+							isArrowKeyLeftPressed = 0;
+						break;
 						
-						case SDLK_LEFT:						
 						case SDLK_RIGHT:
+							isArrowKeyRightPressed = 0;
+						break;
+						
 						case SDLK_UP:
+							isArrowKeyUpPressed = 0;
+						break;
+						
 						case SDLK_DOWN:
-							isArrowKeyPressed = 0;
+							isArrowKeyDownPressed = 0;
 						break;
 						
 						default:
 						break;
+					}
+				break;
+				
+				case SDL_MOUSEBUTTONDOWN:
+					switch(e.button.button){
+						case SDL_BUTTON_WHEELUP:
+							offsetViewZ += 0.5;
+						break;
+						
+						case SDL_BUTTON_WHEELDOWN:
+							offsetViewZ -= 0.5;
+						break;
+						
+						case SDL_BUTTON_LEFT:
+							isLeftClicPressed = 1;
+							savedClicX = e.button.x;
+							savedClicY = e.button.y;
+						break;
+						
+						default:
+						break;
+					}
+				break;
+				
+				case SDL_MOUSEBUTTONUP:
+					isLeftClicPressed = 0;
+					savedClicX = -1;
+					savedClicY = -1;
+					angleViewX += tmpAngleViewX;
+					angleViewY += tmpAngleViewY;
+					tmpAngleViewX=0;
+					tmpAngleViewY=0;
+				break;
+				
+				case SDL_MOUSEMOTION:
+					if(isLeftClicPressed){
+						tmpAngleViewX =  0.25f*(e.motion.x - savedClicX);
+						tmpAngleViewY =  0.25f*(e.motion.y - savedClicY);
 					}
 				break;
 				
@@ -279,25 +339,20 @@ int main(int argc, char** argv) {
 		}
 
 		//Idle
-		switch(isArrowKeyPressed){
-			case 1:
-				offsetViewX -= 0.05;
-			break;
-			
-			case 2:
-				offsetViewX += 0.05;
-			break;
-			
-			case 3:
-				offsetViewY += 0.05;
-			break;
-			
-			case 4:
-				offsetViewY -= 0.05;
-			break;
-			
-			default:
-			break;
+		if(isArrowKeyLeftPressed){
+			offsetViewX += 0.1;
+		}
+		
+		if(isArrowKeyRightPressed){
+			offsetViewX -= 0.1;
+		}
+		
+		if(isArrowKeyUpPressed){
+			offsetViewY -= 0.1;
+		}
+		
+		if(isArrowKeyDownPressed){
+			offsetViewY += 0.1;
 		}
 		
 		// Gestion compteur
@@ -309,10 +364,11 @@ int main(int argc, char** argv) {
 	}
 
 	// Destruction des ressources OpenGL
-
-	/** PLACEZ VOTRE CODE DE DESTRUCTION DES VBOS/VAOS/SHADERS/... ICI **/
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteVertexArrays(1, &cubeVAO);
+	
+	delete[] tabV;
+	delete[] tabF;
 
 	SDL_Quit();
 
