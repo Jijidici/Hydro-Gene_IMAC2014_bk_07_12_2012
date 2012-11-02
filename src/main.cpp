@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
 
 #include <SDL/SDL.h>
 #include <GL/glew.h>
@@ -24,6 +25,26 @@ typedef struct{
 	int nbVertices;
 }Cube;
 
+typedef struct{
+	GLdouble s1X;
+	GLdouble s1Y;
+	GLdouble s1Z;
+	
+	GLdouble s2X;
+	GLdouble s2Y;
+	GLdouble s2Z;
+	
+	GLdouble s3X;
+	GLdouble s3Y;
+	GLdouble s3Z;
+}Face;
+
+typedef struct{
+	GLdouble x;
+	GLdouble y;
+	GLdouble z;
+}Axis;
+
 Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBottom, GLdouble inFar, GLdouble inNear){
 	Cube newCube;
 	newCube.left = inLeft;
@@ -37,10 +58,66 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 	return newCube;
 }
 
+Face createFace(GLdouble inS1X, GLdouble inS1Y, GLdouble inS1Z, GLdouble inS2X, GLdouble inS2Y, GLdouble inS2Z, GLdouble inS3X, GLdouble inS3Y, GLdouble inS3Z){
+	Face newFace;
+	newFace.s1X = inS1X; newFace.s1Y = inS1Y; newFace.s1Z = inS1Z;
+	newFace.s2X = inS2X; newFace.s2Y = inS2Y; newFace.s2Z = inS2Z;
+	newFace.s3X = inS3X; newFace.s3Y = inS3Y; newFace.s3Z = inS3Z;
+	
+	return newFace;
+}
+
+Axis createAxis(GLdouble inX, GLdouble inY, GLdouble inZ){
+	Axis newAxis;
+	newAxis.x = inX;
+	newAxis.y = inY;
+	newAxis.z = inZ;
+	
+	return newAxis;
+}
+
+Face projection(Face face, Axis axis){
+	
+	Axis projectionAxis = createAxis(0.,0.,0.);
+	
+	if(axis.x == 1.) projectionAxis = createAxis(0.,1.,1.);
+	if(axis.y == 1.) projectionAxis = createAxis(1.,0.,1.);
+	if(axis.z == 1.) projectionAxis = createAxis(1.,1.,0.);
+	
+	
+	Face projectedFace = createFace(
+		face.s1X * projectionAxis.x, face.s1Y * projectionAxis.y, face.s1Z * projectionAxis.z,
+		face.s2X * projectionAxis.x, face.s2Y * projectionAxis.y, face.s2Z * projectionAxis.z,
+		face.s3X * projectionAxis.x, face.s3Y * projectionAxis.y, face.s3Z * projectionAxis.z
+	);
+	
+	return projectedFace;
+}
+
+bool insideVertexTest(Cube cube, Face face){
+	//cout << "cube.left : " << cube.left << " sommet.x : " << face.s1X << " cube.right : " << cube.right << endl;
+	//cout << "cube.bottom : " << cube.bottom << " sommet.y : " << face.s1Y << " cube.top : " << cube.top << endl;
+	if(face.s1X >= cube.left 	&& face.s1X <= cube.right
+	&& face.s1Y >= cube.bottom 	&& face.s1Y <= cube.top
+	&& face.s1Z >= cube.far 	&& face.s1Z <= cube.near)
+	{return true;}
+	if(face.s2X >= cube.left 	&& face.s2X <= cube.right
+	&& face.s2Y >= cube.bottom 	&& face.s2Y <= cube.top
+	&& face.s2Z >= cube.far 	&& face.s2Z <= cube.near)
+	{return true;}
+	if(face.s3X >= cube.left 	&& face.s3X <= cube.right
+	&& face.s3Y >= cube.bottom 	&& face.s3Y <= cube.top
+	&& face.s3Z >= cube.far 	&& face.s3Z <= cube.near)
+	{return true;}
+	
+	return false;
+}
+
 static const Uint32 MIN_LOOP_TIME = 1000/FRAME_RATE;
 static const size_t WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
 static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
+static const size_t GRID_3D_SIZE = 2;
 
 int main(int argc, char** argv) {
 
@@ -48,6 +125,30 @@ int main(int argc, char** argv) {
 	/* **************PRE - TRAITEMENT DES VOXELS******************** */
 	/* ************************************************************* */
 	
+	//CREATION DE LA GRILLE DE VOXELS
+	int nbSub = -1;
+	
+	cout << endl <<" > Entrer un nombre de subdivisions : ";
+	cin >>nbSub;
+	
+	while(!(nbSub) || (nbSub<=0)){
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n'); //efface la mauvaise ligne du buffer
+		cout << endl <<" > Entrer un nombre de subdivisions : ";
+		cin >> nbSub;
+	}
+		
+	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
+	int* tabVoxel = new int[tailleTabVoxel];
+
+	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
+		tabVoxel[i] = 0;
+	}
+	
+	double cubeSize = GRID_3D_SIZE/(double)nbSub;
+	double halfCubeSize = cubeSize/2;
+	
+	//CHARGEMENT FICHIERS .DATA
 	//on charge le fichier en mode "read binary"
 	FILE *fichier = NULL;
 	fichier = fopen("hg_petit/page_1.data", "rb");
@@ -63,21 +164,44 @@ int main(int argc, char** argv) {
 	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
 	int const sizeTabVertice(nbVertice*3); //on fixe d'abord la taille que le tableau va prendre en fonction du nombre de vertex
 	double* tabV = new double[sizeTabVertice]; //on crée le tableau (j'ai voulu l'initialiser mais ça buggait alors tant pis)
+	//cout<< <<
 	fread(tabV, sizeTabVertice*sizeof(double), 1, fichier); //on remplit le tableau
 	
-	for (int i =0 ; i < 20 ; ++i) cout << tabV[i] << " "; //mini affichage pour voir si ça fonctionne
-	cout << endl;
-	//(j'ai testé d'une autre manière pr voir si j'obtenais la même chose, ça marchait)
 	
 	//lecture des index des points qui constituent chaque face (idem)
 	int const sizeTabFace(nbFace*3);
-	uint* tabF = new uint[sizeTabFace]; //il a pas reconnu le type uint, je sais pas pourquoi
+	uint* tabF = new uint[sizeTabFace];
 	fread(tabF, sizeTabFace*sizeof(uint), 1, fichier);
-	for (int j =0 ; j < 20 ; ++j) cout << tabF[j] << " ";
-	cout << endl;
 
 	fclose(fichier);
-
+	
+	int nbIntersectionMax = 0;
+	//Pour chaque cube
+	for(size_t n=0;n<tailleTabVoxel;++n){
+		double posX = 0;
+		double posY = 0;
+		double posZ = 0;
+		int reste = 0;
+		posZ = (n/(nbSub*nbSub))/(nbSub-1);
+		reste = n%(nbSub*nbSub);
+		posY = 2*(reste/nbSub)/(nbSub-1) -1;
+		posX = 2*(reste%nbSub)/(nbSub-1) -1;
+		Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
+		//pour chaque face
+		for(int m=0;m<nbFace;++m){
+			Face currentFace = createFace(-1., 0., -1., 1., 0., 1., 1., 0., -1.);
+			/*Face currentFace = createFace(tabV[tabF[3*m]], tabV[tabF[3*m]+1], tabV[tabF[3*m]+2], tabV[tabF[3*m+1]], tabV[tabF[3*m+1]+1], tabV[tabF[3*m+1]+2], tabV[tabF[3*m+2]], tabV[tabF[3*m+2]+1], tabV[tabF[3*m+2]+2]);*/
+			if(insideVertexTest(currentCube, currentFace)){
+				tabVoxel[n] += 1;
+			}
+		}
+		
+		if(tabVoxel[n] > nbIntersectionMax){
+			nbIntersectionMax = tabVoxel[n];
+		}
+		cout<<n<<endl;
+	}
+	
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
 	/* ************************************************************* */
@@ -185,6 +309,8 @@ int main(int argc, char** argv) {
 	glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
 	glm::mat4 VP = P*V;
 	
+	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
+	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
 	
@@ -219,18 +345,23 @@ int main(int argc, char** argv) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		// Dessin
-		for(int i=0;i<11;++i){
-			for(int j=0;j<11;++j){
-				glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
-				MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -10.f)); //MOVE AWWAY FROM THE CAMERA
-				MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
-				MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
-				MVP = glm::translate(MVP, glm::vec3(i*2.f - 10.f, j*2.f - 10.f, 0.f));
-				glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
-				
-				glBindVertexArray(cubeVAO);
-				glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
-				glBindVertexArray(0);
+		for(int i=0;i<nbSub;++i){
+			for(int j=0;j<nbSub;++j){
+				for(int k=0;k<nbSub;++k){
+					glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
+					MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
+					MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
+					MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
+					MVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, -(j*cubeSize-(GRID_3D_SIZE-cubeSize)/2), -k*cubeSize));
+					MVP = glm::scale(MVP, glm::vec3(cubeSize));
+					glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
+					
+					glUniform2i(NbIntersectionLocation, tabVoxel[k*nbSub*nbSub + j*nbSub + i], nbIntersectionMax);
+					
+					glBindVertexArray(cubeVAO);
+					glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
+					glBindVertexArray(0);
+				}
 			}
 		}
 
