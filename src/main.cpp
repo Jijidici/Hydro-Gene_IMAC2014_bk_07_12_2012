@@ -15,6 +15,8 @@
 
 using namespace std;
 
+typedef GLdouble Point[3];
+
 typedef struct{
 	GLdouble left;
 	GLdouble right;
@@ -125,29 +127,6 @@ int main(int argc, char** argv) {
 	/* **************PRE - TRAITEMENT DES VOXELS******************** */
 	/* ************************************************************* */
 	
-	//CREATION DE LA GRILLE DE VOXELS
-	int nbSub = -1;
-	
-	cout << endl <<" > Entrer un nombre de subdivisions : ";
-	cin >>nbSub;
-	
-	while(!(nbSub) || (nbSub<=0)){
-		cin.clear();
-		cin.ignore(numeric_limits<streamsize>::max(), '\n'); //efface la mauvaise ligne du buffer
-		cout << endl <<" > Entrer un nombre de subdivisions : ";
-		cin >> nbSub;
-	}
-		
-	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
-	int* tabVoxel = new int[tailleTabVoxel];
-
-	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
-		tabVoxel[i] = 0;
-	}
-	
-	double cubeSize = GRID_3D_SIZE/(double)nbSub;
-	double halfCubeSize = cubeSize/2;
-	
 	//CHARGEMENT FICHIERS .DATA
 	//on charge le fichier en mode "read binary"
 	FILE *fichier = NULL;
@@ -163,44 +142,17 @@ int main(int argc, char** argv) {
 	
 	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
 	int const sizeTabVertice(nbVertice*3); //on fixe d'abord la taille que le tableau va prendre en fonction du nombre de vertex
-	double* tabV = new double[sizeTabVertice]; //on crée le tableau (j'ai voulu l'initialiser mais ça buggait alors tant pis)
+	GLdouble* tabV = new GLdouble[sizeTabVertice]; //on crée le tableau (j'ai voulu l'initialiser mais ça buggait alors tant pis)
 	//cout<< <<
-	fread(tabV, sizeTabVertice*sizeof(double), 1, fichier); //on remplit le tableau
+	fread(tabV, sizeTabVertice*sizeof(GLdouble), 1, fichier); //on remplit le tableau
 	
 	
 	//lecture des index des points qui constituent chaque face (idem)
 	int const sizeTabFace(nbFace*3);
-	uint* tabF = new uint[sizeTabFace];
-	fread(tabF, sizeTabFace*sizeof(uint), 1, fichier);
+	GLuint* tabF = new GLuint[sizeTabFace];
+	fread(tabF, sizeTabFace*sizeof(GLuint), 1, fichier);
 
 	fclose(fichier);
-	
-	int nbIntersectionMax = 0;
-	//Pour chaque cube
-	for(size_t n=0;n<tailleTabVoxel;++n){
-		double posX = 0;
-		double posY = 0;
-		double posZ = 0;
-		int reste = 0;
-		posZ = (n/(nbSub*nbSub))/(nbSub-1);
-		reste = n%(nbSub*nbSub);
-		posY = 2*(reste/nbSub)/(nbSub-1) -1;
-		posX = 2*(reste%nbSub)/(nbSub-1) -1;
-		Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
-		//pour chaque face
-		for(int m=0;m<nbFace;++m){
-			Face currentFace = createFace(-1., 0., -1., 1., 0., 1., 1., 0., -1.);
-			/*Face currentFace = createFace(tabV[tabF[3*m]], tabV[tabF[3*m]+1], tabV[tabF[3*m]+2], tabV[tabF[3*m+1]], tabV[tabF[3*m+1]+1], tabV[tabF[3*m+1]+2], tabV[tabF[3*m+2]], tabV[tabF[3*m+2]+1], tabV[tabF[3*m+2]+2]);*/
-			if(insideVertexTest(currentCube, currentFace)){
-				tabVoxel[n] += 1;
-			}
-		}
-		
-		if(tabVoxel[n] > nbIntersectionMax){
-			nbIntersectionMax = tabVoxel[n];
-		}
-		cout<<n<<endl;
-	}
 	
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
@@ -219,76 +171,24 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	//Creation des Formes
-	Cube aCube = createCube(-0.5, 0.5, -0.5, 0.5, -0.5, 0.5);
-
-	GLdouble cubeVertices[] = {//
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.left, aCube.top, aCube.near,
-
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.top, aCube.near,
-		aCube.left, aCube.top, aCube.near,
-
-		//
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.right, aCube.top, aCube.far,
-
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-		aCube.right, aCube.top, aCube.near,
-
-		//
-		aCube.left, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-
-		aCube.left, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		////
-		aCube.left, aCube.bottom, aCube.far,
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.right, aCube.top, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		//
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.left, aCube.bottom, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.left, aCube.top, aCube.far,
-		aCube.left, aCube.top, aCube.near,
-
-		//
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.left, aCube.bottom, aCube.far
-	};
+	GLdouble* vertices = new GLdouble[sizeTabVertice];
+	for(int n=0; n<sizeTabVertice; ++n){
+			vertices[n] = tabV[n];
+	}
+	
 	
 	// Creation des VBO, VAO
-	GLuint cubeVBO = 0;
-	glGenBuffers(1, &cubeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+	GLuint vbo = 0;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeTabVertice*sizeof(GLdouble), vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	GLuint cubeVAO = 0;
-	glGenVertexArrays(1, &cubeVAO);  
-	glBindVertexArray(cubeVAO);  
+	
+	GLuint vao = 0;
+	glGenVertexArrays(1, &vao);  
+	glBindVertexArray(vao);  
 		glEnableVertexAttribArray(POSITION_LOCATION);
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -296,8 +196,8 @@ int main(int argc, char** argv) {
 	// Creation des Shaders
 	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
 	if(!program){
-		glDeleteBuffers(1, &cubeVBO);
-		glDeleteVertexArrays(1, &cubeVAO);
+		glDeleteBuffers(1, &vbo);
+		glDeleteVertexArrays(1, &vao);
 		return (EXIT_FAILURE);
 	}
 	glUseProgram(program);
@@ -308,8 +208,6 @@ int main(int argc, char** argv) {
 	glm::mat4 P = glm::perspective(90.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 1000.f);
 	glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
 	glm::mat4 VP = P*V;
-	
-	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
 	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
@@ -344,26 +242,16 @@ int main(int argc, char** argv) {
 		// Nettoyage de la fenêtre
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		// Dessin
-		for(int i=0;i<nbSub;++i){
-			for(int j=0;j<nbSub;++j){
-				for(int k=0;k<nbSub;++k){
-					glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
-					MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
-					MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
-					MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
-					MVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, -(j*cubeSize-(GRID_3D_SIZE-cubeSize)/2), -k*cubeSize));
-					MVP = glm::scale(MVP, glm::vec3(cubeSize));
-					glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
-					
-					glUniform2i(NbIntersectionLocation, tabVoxel[k*nbSub*nbSub + j*nbSub + i], nbIntersectionMax);
-					
-					glBindVertexArray(cubeVAO);
-					glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
-					glBindVertexArray(0);
-				}
-			}
-		}
+
+		glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
+		MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
+		MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
+		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
+		glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
+		
+		glBindVertexArray(vao);
+		glDrawArrays(GL_POINTS, 0, nbVertice);
+		glBindVertexArray(0);
 
 		// Mise à jour de l'affichage
 		SDL_GL_SwapBuffers();
@@ -495,11 +383,12 @@ int main(int argc, char** argv) {
 	}
 
 	// Destruction des ressources OpenGL
-	glDeleteBuffers(1, &cubeVBO);
-	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteBuffers(1, &vbo);
+	glDeleteVertexArrays(1, &vao);
 	
 	delete[] tabV;
 	delete[] tabF;
+	delete[] vertices;
 
 	SDL_Quit();
 
