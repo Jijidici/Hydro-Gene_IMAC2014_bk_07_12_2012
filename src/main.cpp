@@ -18,6 +18,10 @@ using namespace std;
 typedef GLdouble Point[3];
 
 typedef struct{
+	Point pos;
+}Vertex;
+
+typedef struct{
 	GLdouble left;
 	GLdouble right;
 	GLdouble top;
@@ -46,6 +50,11 @@ typedef struct{
 	GLdouble y;
 	GLdouble z;
 }Axis;
+
+
+/******************************************/
+/*          FUNCTIONS                     */
+/******************************************/
 
 Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBottom, GLdouble inFar, GLdouble inNear){
 	Cube newCube;
@@ -121,6 +130,10 @@ static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
 static const size_t GRID_3D_SIZE = 2;
 
+/*************************************/
+/*             MAIN                  */
+/*************************************/
+
 int main(int argc, char** argv) {
 
 	/* ************************************************************* */
@@ -141,10 +154,10 @@ int main(int argc, char** argv) {
 	cout << "Number of faces : " << nbFace << endl;
 	
 	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
-	int const sizeTabVertice(nbVertice*3); //on fixe d'abord la taille que le tableau va prendre en fonction du nombre de vertex
-	GLdouble* tabV = new GLdouble[sizeTabVertice]; //on crée le tableau (j'ai voulu l'initialiser mais ça buggait alors tant pis)
-	//cout<< <<
-	fread(tabV, sizeTabVertice*sizeof(GLdouble), 1, fichier); //on remplit le tableau
+	Vertex* tabV = new Vertex[nbVertice]; //on crée le tableau 
+	for(int n=0;n<nbVertice;++n){
+		fread(tabV[n].pos, sizeof(Point), 1, fichier); //on remplit le tableau
+	}
 	
 	
 	//lecture des index des points qui constituent chaque face (idem)
@@ -170,9 +183,8 @@ int main(int argc, char** argv) {
 		std::cerr << "Impossible d'initialiser GLEW: " << glewGetErrorString(error) << std::endl;
 		return EXIT_FAILURE;
 	}
-	
-	GLdouble* vertices = new GLdouble[sizeTabVertice];
-	for(int n=0; n<sizeTabVertice; ++n){
+	Vertex* vertices = new Vertex[nbVertice];
+	for(int n=0; n<nbVertice; ++n){
 			vertices[n] = tabV[n];
 	}
 	
@@ -181,7 +193,7 @@ int main(int argc, char** argv) {
 	GLuint vbo = 0;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeTabVertice*sizeof(GLdouble), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, nbVertice*sizeof(Vertex), vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	GLuint vao = 0;
@@ -317,11 +329,11 @@ int main(int argc, char** argv) {
 				case SDL_MOUSEBUTTONDOWN:
 					switch(e.button.button){
 						case SDL_BUTTON_WHEELUP:
-							offsetViewZ += 0.5;
+							offsetViewZ += 0.3;
 						break;
 						
 						case SDL_BUTTON_WHEELDOWN:
-							offsetViewZ -= 0.5;
+							offsetViewZ -= 0.3;
 						break;
 						
 						case SDL_BUTTON_LEFT:
@@ -359,19 +371,19 @@ int main(int argc, char** argv) {
 
 		//Idle
 		if(isArrowKeyLeftPressed){
-			offsetViewX += 0.1;
+			offsetViewX += 0.05;
 		}
 		
 		if(isArrowKeyRightPressed){
-			offsetViewX -= 0.1;
+			offsetViewX -= 0.05;
 		}
 		
 		if(isArrowKeyUpPressed){
-			offsetViewY -= 0.1;
+			offsetViewY -= 0.05;
 		}
 		
 		if(isArrowKeyDownPressed){
-			offsetViewY += 0.1;
+			offsetViewY += 0.05;
 		}
 		
 		// Gestion compteur
