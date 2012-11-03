@@ -15,11 +15,19 @@
 
 using namespace std;
 
-typedef GLdouble Point[3];
+typedef struct{
+	GLdouble x;
+	GLdouble y;
+	GLdouble z;
+}Point;
 
 typedef struct{
 	Point pos;
 }Vertex;
+
+typedef struct{
+	Vertex *s1, *s2, *s3;
+}Face;
 
 typedef struct{
 	GLdouble left;
@@ -30,20 +38,6 @@ typedef struct{
 	GLdouble near;
 	int nbVertices;
 }Cube;
-
-typedef struct{
-	GLdouble s1X;
-	GLdouble s1Y;
-	GLdouble s1Z;
-	
-	GLdouble s2X;
-	GLdouble s2Y;
-	GLdouble s2Z;
-	
-	GLdouble s3X;
-	GLdouble s3Y;
-	GLdouble s3Z;
-}Face;
 
 typedef struct{
 	GLdouble x;
@@ -69,11 +63,11 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 	return newCube;
 }
 
-Face createFace(GLdouble inS1X, GLdouble inS1Y, GLdouble inS1Z, GLdouble inS2X, GLdouble inS2Y, GLdouble inS2Z, GLdouble inS3X, GLdouble inS3Y, GLdouble inS3Z){
+Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
 	Face newFace;
-	newFace.s1X = inS1X; newFace.s1Y = inS1Y; newFace.s1Z = inS1Z;
-	newFace.s2X = inS2X; newFace.s2Y = inS2Y; newFace.s2Z = inS2Z;
-	newFace.s3X = inS3X; newFace.s3Y = inS3Y; newFace.s3Z = inS3Z;
+	newFace.s1 = inS1;
+	newFace.s2 = inS2;
+	newFace.s3 = inS3;
 	
 	return newFace;
 }
@@ -96,11 +90,7 @@ Face projection(Face face, Axis axis){
 	if(axis.z == 1.) projectionAxis = createAxis(1.,1.,0.);
 	
 	
-	Face projectedFace = createFace(
-		face.s1X * projectionAxis.x, face.s1Y * projectionAxis.y, face.s1Z * projectionAxis.z,
-		face.s2X * projectionAxis.x, face.s2Y * projectionAxis.y, face.s2Z * projectionAxis.z,
-		face.s3X * projectionAxis.x, face.s3Y * projectionAxis.y, face.s3Z * projectionAxis.z
-	);
+	Face projectedFace = createFace(face.s1,face.s2,face.s3);
 	
 	return projectedFace;
 }
@@ -108,17 +98,17 @@ Face projection(Face face, Axis axis){
 bool insideVertexTest(Cube cube, Face face){
 	//cout << "cube.left : " << cube.left << " sommet.x : " << face.s1X << " cube.right : " << cube.right << endl;
 	//cout << "cube.bottom : " << cube.bottom << " sommet.y : " << face.s1Y << " cube.top : " << cube.top << endl;
-	if(face.s1X >= cube.left 	&& face.s1X <= cube.right
-	&& face.s1Y >= cube.bottom 	&& face.s1Y <= cube.top
-	&& face.s1Z >= cube.far 	&& face.s1Z <= cube.near)
+	if(face.s1->pos.x >= cube.left 		&& face.s1->pos.x <= cube.right
+	&& face.s1->pos.y >= cube.bottom 	&& face.s1->pos.y <= cube.top
+	&& face.s1->pos.z >= cube.far 		&& face.s1->pos.z <= cube.near)
 	{return true;}
-	if(face.s2X >= cube.left 	&& face.s2X <= cube.right
-	&& face.s2Y >= cube.bottom 	&& face.s2Y <= cube.top
-	&& face.s2Z >= cube.far 	&& face.s2Z <= cube.near)
+	if(face.s2->pos.x >= cube.left 		&& face.s2->pos.x <= cube.right
+	&& face.s2->pos.y >= cube.bottom 	&& face.s2->pos.y <= cube.top
+	&& face.s2->pos.z >= cube.far	 	&& face.s2->pos.z <= cube.near)
 	{return true;}
-	if(face.s3X >= cube.left 	&& face.s3X <= cube.right
-	&& face.s3Y >= cube.bottom 	&& face.s3Y <= cube.top
-	&& face.s3Z >= cube.far 	&& face.s3Z <= cube.near)
+	if(face.s3->pos.x >= cube.left 		&& face.s3->pos.x <= cube.right
+	&& face.s3->pos.y >= cube.bottom 	&& face.s3->pos.y <= cube.top
+	&& face.s3->pos.z >= cube.far 		&& face.s3->pos.z <= cube.near)
 	{return true;}
 	
 	return false;
@@ -156,14 +146,21 @@ int main(int argc, char** argv) {
 	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
 	Vertex* tabV = new Vertex[nbVertice]; //on crée le tableau 
 	for(int n=0;n<nbVertice;++n){
-		fread(tabV[n].pos, sizeof(Point), 1, fichier); //on remplit le tableau
+		fread(&(tabV[n].pos.x), sizeof(GLdouble), 1, fichier);
+		fread(&(tabV[n].pos.z), sizeof(GLdouble), 1, fichier);
+		fread(&(tabV[n].pos.y), sizeof(GLdouble), 1, fichier); //on remplit le tableau
 	}
 	
 	
 	//lecture des index des points qui constituent chaque face (idem)
-	int const sizeTabFace(nbFace*3);
-	GLuint* tabF = new GLuint[sizeTabFace];
-	fread(tabF, sizeTabFace*sizeof(GLuint), 1, fichier);
+	Face* tabF = new Face[nbFace];
+	GLuint vertexCoordsOffset[3];
+	for(int n=0;n<nbFace;++n){
+		fread(vertexCoordsOffset, 3*sizeof(GLuint), 1, fichier);
+		tabF[n].s1 = tabV + vertexCoordsOffset[0] -1;
+		tabF[n].s2 = tabV + vertexCoordsOffset[1] -1;
+		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
+	}
 
 	fclose(fichier);
 	
@@ -183,9 +180,14 @@ int main(int argc, char** argv) {
 		std::cerr << "Impossible d'initialiser GLEW: " << glewGetErrorString(error) << std::endl;
 		return EXIT_FAILURE;
 	}
-	Vertex* vertices = new Vertex[nbVertice];
-	for(int n=0; n<nbVertice; ++n){
-			vertices[n] = tabV[n];
+	
+	GLuint nbDisplayVertices = 3*nbFace;
+	Vertex* vertices = new Vertex[nbDisplayVertices];
+	int idx_vert = 0;
+	for(int n=0; n<nbFace; ++n){
+			vertices[idx_vert++] = *(tabF[n].s1);
+			vertices[idx_vert++] = *(tabF[n].s2);
+			vertices[idx_vert++] = *(tabF[n].s3);
 	}
 	
 	
@@ -193,7 +195,7 @@ int main(int argc, char** argv) {
 	GLuint vbo = 0;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, nbVertice*sizeof(Vertex), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, nbDisplayVertices*sizeof(Vertex), vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	GLuint vao = 0;
@@ -262,7 +264,7 @@ int main(int argc, char** argv) {
 		glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
 		
 		glBindVertexArray(vao);
-		glDrawArrays(GL_POINTS, 0, nbVertice);
+		glDrawArrays(GL_TRIANGLES, 0, nbDisplayVertices);
 		glBindVertexArray(0);
 
 		// Mise à jour de l'affichage
