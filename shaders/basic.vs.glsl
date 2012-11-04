@@ -10,7 +10,8 @@ out vec3 oPosition;
 void main(){
 	oPosition = position;
 	
-	if(uNbIntersection[0] > 0){
+	//if(uNbIntersection[0] > 0){
 		gl_Position = uMVPMatrix * vec4(position, 1.f);
-	}
+	//}
+	
 }

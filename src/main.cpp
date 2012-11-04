@@ -97,19 +97,21 @@ Face projection(Face face, Axis axis){
 bool insideVertexTest(Cube cube, Face face){
 	//cout << "cube.left : " << cube.left << " sommet.x : " << face.s1X << " cube.right : " << cube.right << endl;
 	//cout << "cube.bottom : " << cube.bottom << " sommet.y : " << face.s1Y << " cube.top : " << cube.top << endl;
+	//cout << "cube.near : " << cube.near << " sommet.z : " << face.s1Z << " cube.far : " << cube.far << endl;
 	if(face.s1X >= cube.left 	&& face.s1X <= cube.right
 	&& face.s1Y >= cube.bottom 	&& face.s1Y <= cube.top
 	&& face.s1Z >= cube.far 	&& face.s1Z <= cube.near)
-	{return true;}
+	{cout << "intersection sommet1" << endl; return true;}
 	if(face.s2X >= cube.left 	&& face.s2X <= cube.right
 	&& face.s2Y >= cube.bottom 	&& face.s2Y <= cube.top
 	&& face.s2Z >= cube.far 	&& face.s2Z <= cube.near)
-	{return true;}
+	{/*cout << "intersection sommet2" << endl; */return true;}
 	if(face.s3X >= cube.left 	&& face.s3X <= cube.right
 	&& face.s3Y >= cube.bottom 	&& face.s3Y <= cube.top
 	&& face.s3Z >= cube.far 	&& face.s3Z <= cube.near)
-	{return true;}
+	{cout << "intersection sommet3" << endl; return true;}
 	
+	//cout << "no intersection" << endl;
 	return false;
 }
 
@@ -190,7 +192,7 @@ int main(int argc, char** argv) {
 		//pour chaque face
 		for(int m=0;m<nbFace;++m){
 			Face currentFace = createFace(-1., 0., -1., 1., 0., 1., 1., 0., -1.);
-			/*Face currentFace = createFace(tabV[tabF[3*m]], tabV[tabF[3*m]+1], tabV[tabF[3*m]+2], tabV[tabF[3*m+1]], tabV[tabF[3*m+1]+1], tabV[tabF[3*m+1]+2], tabV[tabF[3*m+2]], tabV[tabF[3*m+2]+1], tabV[tabF[3*m+2]+2]);*/
+			//Face currentFace = createFace(tabV[tabF[3*m]], tabV[tabF[3*m]+1], tabV[tabF[3*m]+2], tabV[tabF[3*m+1]], tabV[tabF[3*m+1]+1], tabV[tabF[3*m+1]+2], tabV[tabF[3*m+2]], tabV[tabF[3*m+2]+1], tabV[tabF[3*m+2]+2]);
 			if(insideVertexTest(currentCube, currentFace)){
 				tabVoxel[n] += 1;
 			}
@@ -277,6 +279,10 @@ int main(int argc, char** argv) {
 		aCube.left, aCube.bottom, aCube.far
 	};
 	
+	GLdouble faceVertice[] = {
+		-1., 0., -1., 1., 0., 1., 1., 0., -1.
+	};
+	
 	// Creation des VBO, VAO
 	GLuint cubeVBO = 0;
 	glGenBuffers(1, &cubeVBO);
@@ -289,6 +295,22 @@ int main(int argc, char** argv) {
 	glBindVertexArray(cubeVAO);  
 		glEnableVertexAttribArray(POSITION_LOCATION);
 		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	
+	
+	GLuint faceVBO = 0;
+	glGenBuffers(1, &faceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(faceVertice), faceVertice, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	GLuint faceVAO = 0;
+	glGenVertexArrays(1, &faceVAO);
+	glBindVertexArray(faceVAO);
+		glEnableVertexAttribArray(POSITION_LOCATION);
+		glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
 			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -359,11 +381,19 @@ int main(int argc, char** argv) {
 					glUniform2i(NbIntersectionLocation, tabVoxel[k*nbSub*nbSub + j*nbSub + i], nbIntersectionMax);
 					
 					glBindVertexArray(cubeVAO);
-					glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
+					if(tabVoxel[k*nbSub*nbSub + j*nbSub + i] == 0){
+						glDrawArrays(GL_LINE_LOOP, 0, aCube.nbVertices);
+					}else{
+						glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
+					}
 					glBindVertexArray(0);
 				}
 			}
 		}
+		glUniform2i(NbIntersectionLocation, 1, nbIntersectionMax);
+		glBindVertexArray(faceVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(0);
 
 		// Mise à jour de l'affichage
 		SDL_GL_SwapBuffers();
@@ -497,6 +527,8 @@ int main(int argc, char** argv) {
 	// Destruction des ressources OpenGL
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteBuffers(1, &faceVBO);
+	glDeleteVertexArrays(1, &faceVAO);
 	
 	delete[] tabV;
 	delete[] tabF;
