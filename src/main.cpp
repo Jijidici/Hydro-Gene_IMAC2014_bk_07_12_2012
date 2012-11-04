@@ -63,6 +63,29 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 	return newCube;
 }
 
+Point * createBoxPoints(Cube cube){
+	Point * boxPoints = new Point[8];
+	Point LTN; LTN.x = cube.left; LTN.y = cube.top; LTN.z = cube.near;
+	Point RTN; RTN.x = cube.right; RTN.y = cube.top; RTN.z = cube.near;
+	Point RBN; RBN.x = cube.right; RBN.y = cube.bottom; RBN.z = cube.near;
+	Point LBN; LBN.x = cube.left; LBN.y = cube.bottom; LBN.z = cube.near;
+	Point LTF; LTF.x = cube.left; LTF.y = cube.top; LTF.z = cube.far;
+	Point RTF; RTF.x = cube.right; RTF.y = cube.top; RTF.z = cube.far;
+	Point RBF; RBF.x = cube.right; RBF.y = cube.bottom; RBF.z = cube.far;
+	Point LBF; LBF.x = cube.left; LBF.y = cube.bottom; LBF.z = cube.far;
+	
+	boxPoints[0] = LTN;
+	boxPoints[1] = RTN;
+	boxPoints[2] = RBN;
+	boxPoints[3] = LBN;
+	boxPoints[4] = LTF;
+	boxPoints[5] = RTF;
+	boxPoints[6] = RBF;
+	boxPoints[7] = LBF;
+	
+	return boxPoints;
+}
+
 Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
 	Face newFace;
 	newFace.s1 = inS1;
@@ -70,6 +93,28 @@ Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
 	newFace.s3 = inS3;
 	
 	return newFace;
+}
+
+Point * createTriPoints(Face face){
+	Point * triPoints = new Point[3];
+	Point A,B,C;
+	A.x = face.s1->pos.x;
+	A.y = face.s1->pos.y;
+	A.z = face.s1->pos.z;
+	
+	B.x = face.s2->pos.x;
+	B.y = face.s2->pos.y;
+	B.z = face.s2->pos.z;
+	
+	C.x = face.s3->pos.x;
+	C.y = face.s3->pos.y;
+	C.z = face.s3->pos.z;
+	
+	triPoints[0] = A;
+	triPoints[1] = B;
+	triPoints[2] = C;
+	
+	return triPoints;
 }
 
 /*
@@ -117,7 +162,17 @@ GLdouble dotProduct(glm::vec3 v1, glm::vec3 v2){
 	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
 }
 
-glm::vec3 vecSub(glm::vec3 v1, glm::vec3 v2){
+GLdouble dotProduct(Point p1, glm::vec3 v2){
+	/*
+	cout << "point.x : " << p1.x << " axe.x : " << v2.x << endl;
+	cout << "point.y : " << p1.y << " axe.y : " << v2.y << endl;
+	cout << "point.z : " << p1.z << " axe.z : " << v2.z << endl;
+	cout << endl;
+	*/
+	return (p1.x*v2.x + p1.y*v2.y + p1.z*v2.z);
+}
+
+glm::vec3 vecSub(Point v1, Point v2){
 	glm::vec3 result;
 	result.x = v1.x - v2.x;
 	result.y = v1.y - v2.y;
@@ -142,124 +197,121 @@ GLdouble max(GLdouble a, GLdouble b, GLdouble c){
 	
 	return max;
 }
+
+// version avec axe
+// pour les boxes
+GLdouble getminBoxPoints(Point * boxPoints, glm::vec3 axis){
+	GLdouble min = dotProduct(boxPoints[0], axis);
+	GLdouble dotprod = 0;
+	int i =0;
+	for(i = 1; i < 8; ++i){
+		dotprod = dotProduct(boxPoints[i], axis);
+		if(dotprod < min) min = dotprod;
+	}
+	
+	return min;
+}
+
+GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
+	GLdouble max = dotProduct(boxPoints[0], axis);
+	GLdouble dotprod = 0;
+	int i =0;
+	for(i = 1; i < 8; ++i){
+		dotprod = dotProduct(boxPoints[i], axis);
+		if(dotprod > max) max = dotprod;
+	}
+	
+	return max;
+}
+
+// pour les triangles
+GLdouble getminTriPoints(Point * triPoints, glm::vec3 axis){
+	GLdouble min = dotProduct(triPoints[0], axis);
+	GLdouble dotprod = 0;
+	int i =0;
+	for(i = 1; i < 3; ++i){
+		dotprod = dotProduct(triPoints[i], axis);
+		if(dotprod < min) min = dotprod;
+	}
+	
+	return min;
+}
+
+GLdouble getmaxTriPoints(Point * triPoints, glm::vec3 axis){
+	GLdouble max = dotProduct(triPoints[0], axis);
+	GLdouble dotprod = 0;
+	int i =0;
+	for(i = 1; i < 3; ++i){
+		dotprod = dotProduct(triPoints[i], axis);
+		if(dotprod > max) max = dotprod;
+	}
+	
+	return max;
+}
+
+
 /************************/
 /******INTERSECTION******/
 /************************/
 
-bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
-	size_t LEFT, RIGHT, TOP, BOTTOM;
-	LEFT = 0;
-	RIGHT = 1;
-	TOP = 2;
-	BOTTOM = 3;
-	
-	// projection selon les axes du repere
-	
-	// axe x(1 0 0) : //
-	GLdouble faceAABB[4]; // le plus en gauche/droite/haut/bas selon l'axe de projection
-	GLdouble cubeAABB[4];
-	//gauche
-	faceAABB[LEFT] = min(testedFace.s1->pos.z, testedFace.s2->pos.z, testedFace.s3->pos.z);
-	//droite
-	faceAABB[RIGHT] = max(testedFace.s1->pos.z, testedFace.s2->pos.z, testedFace.s3->pos.z);
-	//haut
-	faceAABB[TOP] = max(testedFace.s1->pos.y, testedFace.s2->pos.y, testedFace.s3->pos.y);
-	//bas
-	faceAABB[BOTTOM] = min(testedFace.s1->pos.y, testedFace.s2->pos.y, testedFace.s3->pos.y);
-	/*
-	cout << "plus à gauche selon x : " << faceAABB[0] << endl;
-	cout << "plus en haut selon x : " << faceAABB[2] << endl;
-	*/
-	cubeAABB[LEFT] = testedCube.far;
-	cubeAABB[RIGHT] = testedCube.near;
-	cubeAABB[TOP] = testedCube.top;
-	cubeAABB[BOTTOM] = testedCube.bottom;
-	/*
-	cout << "plus à gauche selon x : " << cubeAABB[0] << endl;
-	cout << "plus en haut selon x : " << cubeAABB[2] << endl;
-	*/
-	
-	// overlap test selon l'axe x
-	
-	if(faceAABB[LEFT] > cubeAABB[RIGHT] //triangle trop à droite
-	|| faceAABB[RIGHT] < cubeAABB[LEFT] //triangle trop à gauche
-	|| faceAABB[BOTTOM] > cubeAABB[TOP] //triangle trop en haut
-	|| faceAABB[TOP] < cubeAABB[BOTTOM]) //triangle trop en bas
-	{
-		cout << "test x" << endl;
-		return false; // pas d'overlap : on a un gap entre les deux projections selon l'axe x
+bool minmaxTest(Point * boxPoints, Point * triPoints, glm::vec3 axis){
+	if(getminBoxPoints(boxPoints, axis) > getmaxTriPoints(triPoints, axis)){
+		return false;
 	}
-	/*
-	if(faceAABB[LEFT] > cubeAABB[RIGHT]){ cout << "LEFT" << endl; return false;}
-	if(faceAABB[RIGHT] < cubeAABB[LEFT]){ cout << "RIGHT" << endl; return false;}
-	if(faceAABB[BOTTOM] > cubeAABB[TOP]){ cout << "TOP" << endl; return false;}
-	if(faceAABB[TOP] < cubeAABB[BOTTOM]){ cout << "BOTTOM" << endl; return false;}
-	*/
-	// axe y(0 1 0) : //
-	faceAABB[LEFT] = min(testedFace.s1->pos.x, testedFace.s2->pos.x, testedFace.s3->pos.x);
-	//droite
-	faceAABB[RIGHT] = max(testedFace.s1->pos.x, testedFace.s2->pos.x, testedFace.s3->pos.x);
-	//haut
-	faceAABB[TOP] = min(testedFace.s1->pos.z, testedFace.s2->pos.z, testedFace.s3->pos.z);
-	//bas
-	faceAABB[BOTTOM] = max(testedFace.s1->pos.z, testedFace.s2->pos.z, testedFace.s3->pos.z);
-	/*
-	cout << "plus à gauche selon y : " << faceAABB[0] << endl;
-	cout << "plus en haut selon y : " << faceAABB[2] << endl;
-	*/
-	cubeAABB[LEFT] = testedCube.left;
-	cubeAABB[RIGHT] = testedCube.right;
-	cubeAABB[TOP] = testedCube.near;
-	cubeAABB[BOTTOM] = testedCube.far;
-	/*
-	cout << "plus à gauche selon y : " << cubeAABB[0] << endl;
-	cout << "plus en haut selon y : " << cubeAABB[2] << endl;
-	*/
-	
-	// overlap test selon l'axe y
-	if(faceAABB[LEFT] > cubeAABB[RIGHT] //triangle trop à droite
-	|| faceAABB[RIGHT] < cubeAABB[LEFT] //triangle trop à gauche
-	|| faceAABB[BOTTOM] > cubeAABB[TOP] //triangle trop en haut
-	|| faceAABB[TOP] < cubeAABB[BOTTOM]) //triangle trop en bas
-	{
-		cout << "test y" << endl;
-		return false; // pas d'overlap : on a un gap entre les deux projections selon l'axe y
+	if(getmaxBoxPoints(boxPoints, axis) < getminTriPoints(triPoints, axis)){
+		return false;
 	}
-	
-	// axe z(0 0 1) : //
-	faceAABB[LEFT] = min(testedFace.s1->pos.x, testedFace.s2->pos.x, testedFace.s3->pos.x);
-	//droite
-	faceAABB[RIGHT] = max(testedFace.s1->pos.x, testedFace.s2->pos.x, testedFace.s3->pos.x);
-	//haut
-	faceAABB[TOP] = max(testedFace.s1->pos.y, testedFace.s2->pos.y, testedFace.s3->pos.y);
-	//bas
-	faceAABB[BOTTOM] = min(testedFace.s1->pos.y, testedFace.s2->pos.y, testedFace.s3->pos.y);
-	/*
-	cout << "plus à gauche selon z : " << faceAABB[0] << endl;
-	cout << "plus en haut selon z : " << faceAABB[2] << endl;
-	*/
-	cubeAABB[LEFT] = testedCube.left;
-	cubeAABB[RIGHT] = testedCube.right;
-	cubeAABB[TOP] = testedCube.top;
-	cubeAABB[BOTTOM] = testedCube.bottom;
-	/*
-	cout << "plus à gauche selon z : " << cubeAABB[0] << endl;
-	cout << "plus en haut selon z : " << cubeAABB[2] << endl;
-	*/
-	
-	// overlap test selon l'axe z
-	if(faceAABB[LEFT] > cubeAABB[RIGHT] //triangle trop à droite
-	|| faceAABB[RIGHT] < cubeAABB[LEFT] //triangle trop à gauche
-	|| faceAABB[BOTTOM] > cubeAABB[TOP] //triangle trop en haut
-	|| faceAABB[TOP] < cubeAABB[BOTTOM]) //triangle trop en bas
-	{
-		cout << "test z" << endl;
-		return false; // pas d'overlap : on a un gap entre les deux projections selon l'axe z
-	}
-	
+
 	return true;
 }
 
+
+
+bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
+	Point * boxPoints = createBoxPoints(testedCube);
+	Point * triPoints = createTriPoints(testedFace);
+	
+	glm::vec3 xAxis(1.,0.,0.);
+	if(!minmaxTest(boxPoints, triPoints, xAxis)){
+		return false;
+	}
+	cout << endl;
+	glm::vec3 yAxis(0.,1.,0.);
+	if(!minmaxTest(boxPoints, triPoints, yAxis)){
+		return false;
+	}
+	cout << endl;
+	glm::vec3 zAxis(0.,0.,1.);
+	if(!minmaxTest(boxPoints, triPoints, zAxis)){
+		return false;
+	}
+	
+	// edges du triangle :
+	glm::vec3 edge1 = vecSub(triPoints[1], triPoints[0]);
+	glm::vec3 edge2 = vecSub(triPoints[2], triPoints[1]);
+	glm::vec3 edge3 = vecSub(triPoints[0], triPoints[2]);
+	
+	glm::vec3 normal = crossProduct(edge1, edge2);
+	
+	if(!minmaxTest(boxPoints, triPoints, normal)){
+		return false;
+	}
+	
+	// 9 edges cross products
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, yAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, zAxis))){ return false;}
+	
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, xAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, zAxis))){ return false;}
+	
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge3, zAxis))){ return false;}
+	
+	return true;
+}
 
 
 static const Uint32 MIN_LOOP_TIME = 1000/FRAME_RATE;
@@ -350,11 +402,12 @@ int main(int argc, char** argv) {
 	
 	// CREATION D'UNE FACE DE TEST
 	Point aPoint, bPoint, cPoint;
+	/*
 	aPoint.x = -0.3f;	aPoint.y = 0.4;		aPoint.z = 0.0f;
 	bPoint.x = 0.3f;	bPoint.y = -0.1;	bPoint.z = -0.2f;
 	cPoint.x = 0.2f;	cPoint.y = 0.1;		cPoint.z = 0.3f;
-	
-	aPoint.x = 1.f;		aPoint.y = 0.;		aPoint.z = 0.0f;
+	*/
+	aPoint.x = -1.7f;	aPoint.y = 0.2f;		aPoint.z = 0.0f;
 	bPoint.x = 1.3f;	bPoint.y = 1.1;		bPoint.z = 1.2f;
 	cPoint.x = 1.2f;	cPoint.y = 1.1;		cPoint.z = 1.3f;
 	
@@ -374,9 +427,11 @@ int main(int argc, char** argv) {
 	faceVertice[0] = *(testFace.s1);
 	faceVertice[1] = *(testFace.s2);
 	faceVertice[2] = *(testFace.s3);
-	
-	//cout << faceVertice[0].pos.x << endl;
-	
+	/*
+	cout << faceVertice[0].pos.x << endl;
+	cout << faceVertice[0].pos.y << endl;
+	cout << faceVertice[0].pos.z << endl;
+	*/
 	// CREATION DU CUBE DE TEST
 	Cube aCube = createCube(-0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f);
 	
@@ -434,6 +489,12 @@ int main(int argc, char** argv) {
 		aCube.right, aCube.bottom, aCube.far,
 		aCube.left, aCube.bottom, aCube.far
 	};
+	
+	
+	//cout << boxPoints[0].x << endl;
+	//glm::vec3 axis(1.,1.,0.);
+	//GLdouble test = getminBoxPoints(boxPoints, axis);
+	//cout << test << endl;
 	
 	if(aabbTriboxOverlapTest(aCube, testFace)){
 		cout << "overlap" << endl;
