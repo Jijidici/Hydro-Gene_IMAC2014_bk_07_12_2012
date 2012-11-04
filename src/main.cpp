@@ -191,7 +191,10 @@ int main(int argc, char** argv) {
 	}
 	
 	
-	// Creation des VBO, VAO
+	/* ******************************** */
+	/* 		Creation des VBO, VAO 		*/
+	/* ******************************** */
+	
 	GLuint vbo = 0;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);

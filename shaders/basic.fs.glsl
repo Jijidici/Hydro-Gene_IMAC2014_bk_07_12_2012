@@ -10,5 +10,5 @@ float max(float a, float b){
 }
 
 void main() {
-	fFragColor = vec4(0.6f, 0.5f, 0.f, 1.f);
+	fFragColor = vec4(oPosition.y*10, 0.1f, 0.2f, 1.f);
 }
