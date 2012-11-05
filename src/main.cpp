@@ -364,75 +364,66 @@ int main(int argc, char** argv) {
 
 	fclose(fichier);
 	
-	// tableau de vertice envoyé au VBO
-	GLuint nbDisplayVertices = 3*nbFace;
-	Vertex* vertices = new Vertex[nbDisplayVertices];
-	int idx_vert = 0;
-	for(int n=0; n<nbFace; ++n){
-			vertices[idx_vert++] = *(tabF[n].s1);
-			vertices[idx_vert++] = *(tabF[n].s2);
-			vertices[idx_vert++] = *(tabF[n].s3);
+	//CREATION DE LA GRILLE 3D DE VOXELS
+	int nbSub = -1;
+	
+	cout << endl <<" > Entrer un nombre de subdivisions : ";
+	cin >>nbSub;
+	
+	while(!(nbSub) || (nbSub<=0)){
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n'); //efface la mauvaise ligne du buffer
+		cout << endl <<" > Entrer un nombre de subdivisions : ";
+		cin >> nbSub;
+	}
+		
+	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
+	int* tabVoxel = new int[tailleTabVoxel];
+
+	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
+		tabVoxel[i] = 0;
 	}
 	
-	/***************************/
-	/***********TESTS***********/
-	/***************************/
-	/*
-	// test crossproduct
-	glm::vec3 v1, v2, vRes;
-	v1.x = 1.f; v1.y = 0.f; v1.z = 0.f;
-	v2.x = 0.f; v2.y = 1.f; v2.z = 0.f;
+	double cubeSize = GRID_3D_SIZE/(double)nbSub;
+	double halfCubeSize = cubeSize/2;
 	
-	vRes = crossProduct(v1,v2);
+	//TESTS DE TOUTES LES INTERSECTIONS
+	int nbIntersectionMax = 3*nbSub;;
 	
-	cout << "crossProduct " << vRes.x << " " << vRes.y << " " << vRes.z << " " << endl;
+	//Pour chaque cube
+	for(int k=0;k<nbSub;++k){
+		for(int j=0;j<nbSub;++j){
+			for(int i=0;i<nbSub;++i){
+				double posX =  i*cubeSize -1;
+				double posY = -j*cubeSize +1;
+				double posZ = -k*cubeSize +1;
+				tabVoxel[i + nbSub*j + nbSub*nbSub*k] = i+j+k;
+			}
+		} 
+	}
 	
-	// test dotproduct
-	GLdouble dot = 0;
-	dot = dotProduct(v1, v2);
+	/* ************************************************************* */
+	/* *************INITIALISATION OPENGL/SDL*********************** */
+	/* ************************************************************* */
+
+	// Initialisation de la SDL
+	SDL_Init(SDL_INIT_VIDEO);
+
+	// Creation de la fenêtre et d'un contexte OpenGL
+	SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, BYTES_PER_PIXEL, SDL_OPENGL);
+
+	// Initialisation de GLEW
+	GLenum error;
+	if(GLEW_OK != (error = glewInit())) {
+		std::cerr << "Impossible d'initialiser GLEW: " << glewGetErrorString(error) << std::endl;
+		return EXIT_FAILURE;
+	}
 	
-	cout << "dotProduct " << dot << endl;
+	/* *********************************** */
+	/* ****** CREATION DES FORMES ******** */
+	/* *********************************** */
 	
-	// test vecSub
-	glm::vec3 sub;
-	sub = vecSub(v1, v2);
-	cout << "vecSub " << sub.x << " " << sub.y << " " << sub.z << " " << endl;
-	*/
-	
-	
-	// CREATION D'UNE FACE DE TEST
-	Point aPoint, bPoint, cPoint;
-	/*
-	aPoint.x = -0.3f;	aPoint.y = 0.4;		aPoint.z = 0.0f;
-	bPoint.x = 0.3f;	bPoint.y = -0.1;	bPoint.z = -0.2f;
-	cPoint.x = 0.2f;	cPoint.y = 0.1;		cPoint.z = 0.3f;
-	*/
-	aPoint.x = -1.7f;	aPoint.y = 0.2f;		aPoint.z = 0.0f;
-	bPoint.x = 1.3f;	bPoint.y = 1.1;		bPoint.z = 1.2f;
-	cPoint.x = 1.2f;	cPoint.y = 1.1;		cPoint.z = 1.3f;
-	
-	Vertex aVertex;
-	aVertex.pos = aPoint;
-	Vertex bVertex;
-	bVertex.pos = bPoint;
-	Vertex cVertex;
-	cVertex.pos = cPoint;
-	
-	Face testFace = createFace(&aVertex, &bVertex, &cVertex);
-	
-	//Face testFace = tabF[0];
-	
-	// tableau de vertice envoyé au VBO
-	Vertex * faceVertice = new Vertex[3];
-	faceVertice[0] = *(testFace.s1);
-	faceVertice[1] = *(testFace.s2);
-	faceVertice[2] = *(testFace.s3);
-	/*
-	cout << faceVertice[0].pos.x << endl;
-	cout << faceVertice[0].pos.y << endl;
-	cout << faceVertice[0].pos.z << endl;
-	*/
-	// CREATION DU CUBE DE TEST
+	// CREATION DU CUBE 
 	Cube aCube = createCube(-0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f);
 	
 	GLdouble cubeVertices[] = {//
@@ -490,76 +481,9 @@ int main(int argc, char** argv) {
 		aCube.left, aCube.bottom, aCube.far
 	};
 	
-	
-	//cout << boxPoints[0].x << endl;
-	//glm::vec3 axis(1.,1.,0.);
-	//GLdouble test = getminBoxPoints(boxPoints, axis);
-	//cout << test << endl;
-	
-	if(aabbTriboxOverlapTest(aCube, testFace)){
-		cout << "overlap" << endl;
-	}else{
-		cout << "no overlap" << endl;
-	}
-	
-	/* ************************************************************* */
-	/* *************INITIALISATION OPENGL/SDL*********************** */
-	/* ************************************************************* */
-
-	// Initialisation de la SDL
-	SDL_Init(SDL_INIT_VIDEO);
-
-	// Creation de la fenêtre et d'un contexte OpenGL
-	SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, BYTES_PER_PIXEL, SDL_OPENGL);
-
-	// Initialisation de GLEW
-	GLenum error;
-	if(GLEW_OK != (error = glewInit())) {
-		std::cerr << "Impossible d'initialiser GLEW: " << glewGetErrorString(error) << std::endl;
-		return EXIT_FAILURE;
-	}
-	
 	/* ******************************** */
 	/* 		Creation des VBO, VAO 		*/
 	/* ******************************** */
-
-	GLuint vbo = 0;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, nbDisplayVertices*sizeof(Vertex), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	GLuint vao = 0;
-	glGenVertexArrays(1, &vao);  
-	glBindVertexArray(vao);  
-		glEnableVertexAttribArray(POSITION_LOCATION);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	
-	/************************/
-	/******FACE DE TEST******/
-	/************************/
-	
-	GLuint faceVBO = 0;
-	glGenBuffers(1, &faceVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
-		glBufferData(GL_ARRAY_BUFFER, 3*sizeof(Vertex), faceVertice, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	GLuint faceVAO = 0;
-	glGenVertexArrays(1, &faceVAO);
-	glBindVertexArray(faceVAO);
-		glEnableVertexAttribArray(POSITION_LOCATION);
-		glBindBuffer(GL_ARRAY_BUFFER, faceVBO);
-			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	
-	/************************/
-	/******CUBE DE TEST******/
-	/************************/
 	
 	GLuint cubeVBO = 0;
 	glGenBuffers(1, &cubeVBO);
@@ -581,10 +505,11 @@ int main(int argc, char** argv) {
 	// Creation des Shaders
 	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
 	if(!program){
-		glDeleteBuffers(1, &vbo);
-		glDeleteBuffers(1, &faceVBO);
-		glDeleteVertexArrays(1, &vao);
-		glDeleteVertexArrays(1, &faceVAO);
+		glDeleteBuffers(1, &cubeVBO);
+		glDeleteVertexArrays(1, &cubeVAO);
+		delete[] tabV;
+		delete[] tabF;
+		delete[] tabVoxel;
 		return (EXIT_FAILURE);
 	}
 	glUseProgram(program);
@@ -595,6 +520,9 @@ int main(int argc, char** argv) {
 	glm::mat4 P = glm::perspective(90.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 1000.f);
 	glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
 	glm::mat4 VP = P*V;
+	
+	// Recuperation des variables uniformes
+	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
 	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
@@ -634,25 +562,26 @@ int main(int argc, char** argv) {
 		MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
 		MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
 		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
-		glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
 		
-		
-		// face de test
-		glBindVertexArray(faceVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
-		glBindVertexArray(0);
-		
-		/*
-		// terrain
-		glBindVertexArray(vao);
-			glDrawArrays(GL_TRIANGLES, 0, nbDisplayVertices);
-		glBindVertexArray(0);
-		*/
-		
-		// cube de test (wireframe)
-		glBindVertexArray(cubeVAO);
-			glDrawArrays(GL_LINE_LOOP, 0, aCube.nbVertices);
-		glBindVertexArray(0);
+		// Affichage de la grille
+		for(int k=0;k<nbSub;++k){
+			for(int j=0;j<nbSub;++j){
+				for(int i=0;i<nbSub;++i){
+						int currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
+						if(currentNbIntersection != 0){
+							glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, -(j*cubeSize-(GRID_3D_SIZE-cubeSize)/2), -(k*cubeSize-(GRID_3D_SIZE-cubeSize)/2))); //PLACEMENT OF EACH GRID CUBE
+							aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
+							glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(aCubeMVP));
+						
+							glUniform2i(NbIntersectionLocation, currentNbIntersection, nbIntersectionMax);
+						
+							glBindVertexArray(cubeVAO);
+								glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
+							glBindVertexArray(0);
+						}
+				}
+			}
+		}
 
 		// Mise à jour de l'affichage
 		SDL_GL_SwapBuffers();
@@ -784,14 +713,11 @@ int main(int argc, char** argv) {
 	}
 
 	// Destruction des ressources OpenGL
-	glDeleteBuffers(1, &vbo);
-	glDeleteBuffers(1, &faceVBO);
-	glDeleteVertexArrays(1, &vao);
-	glDeleteVertexArrays(1, &faceVAO);
+	glDeleteBuffers(1, &cubeVBO);
+	glDeleteVertexArrays(1, &cubeVAO);
 	delete[] tabV;
 	delete[] tabF;
-	delete[] vertices;
-	delete[] faceVertice;
+	delete[] tabVoxel;
 
 	SDL_Quit();
 

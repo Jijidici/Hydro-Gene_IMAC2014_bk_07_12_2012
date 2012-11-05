@@ -1,14 +1,11 @@
 #version 330
 
-in vec3 oPosition;
+uniform ivec2 uNbIntersection = ivec2(1.f);
 
 out vec4 fFragColor;
 
-float max(float a, float b){
-	if(a>b){ return a; }
-	else{ return b; }
-}
-
 void main() {
-	fFragColor = vec4(oPosition.y*10, 0.1f, 0.2f, 1.f);
+	
+	float ratioIntersection = uNbIntersection[0] / float(uNbIntersection[1]);
+	fFragColor = vec4(1.f, 1.f - ratioIntersection, 0.1f, 1.f);
 }
