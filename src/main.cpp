@@ -275,12 +275,12 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
 	if(!minmaxTest(boxPoints, triPoints, xAxis)){
 		return false;
 	}
-	cout << endl;
+	
 	glm::vec3 yAxis(0.,1.,0.);
 	if(!minmaxTest(boxPoints, triPoints, yAxis)){
 		return false;
 	}
-	cout << endl;
+	
 	glm::vec3 zAxis(0.,0.,1.);
 	if(!minmaxTest(boxPoints, triPoints, zAxis)){
 		return false;
@@ -388,16 +388,27 @@ int main(int argc, char** argv) {
 	double halfCubeSize = cubeSize/2;
 	
 	//TESTS DE TOUTES LES INTERSECTIONS
-	int nbIntersectionMax = 3*nbSub;;
+	int nbIntersectionMax = 0;
 	
 	//Pour chaque cube
 	for(int k=0;k<nbSub;++k){
 		for(int j=0;j<nbSub;++j){
 			for(int i=0;i<nbSub;++i){
+				int currentVoxel = i + nbSub*j + nbSub*nbSub*k;
 				double posX =  i*cubeSize -1;
 				double posY = -j*cubeSize +1;
 				double posZ = -k*cubeSize +1;
-				tabVoxel[i + nbSub*j + nbSub*nbSub*k] = i+j+k;
+				Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
+				
+				//Pour chaque face
+				for(int n=0;n<nbFace;++n){
+					if(aabbTriboxOverlapTest(currentCube, tabF[n])){
+						tabVoxel[currentVoxel]++;
+					}
+				}
+				if(tabVoxel[currentVoxel] > nbIntersectionMax){
+					nbIntersectionMax = tabVoxel[currentVoxel];
+				}
 			}
 		} 
 	}
