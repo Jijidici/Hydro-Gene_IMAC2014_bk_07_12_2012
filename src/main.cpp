@@ -13,6 +13,12 @@
 
 #define FRAME_RATE 60
 
+static const Uint32 MIN_LOOP_TIME = 1000/FRAME_RATE;
+static const size_t WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
+static const size_t BYTES_PER_PIXEL = 32;
+static const size_t POSITION_LOCATION = 0;
+static const size_t GRID_3D_SIZE = 2;
+
 using namespace std;
 
 typedef struct{
@@ -310,20 +316,69 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
 	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ return false;}
 	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge3, zAxis))){ return false;}
 	
+	delete[] boxPoints;
+	delete[] triPoints;
+	
 	return true;
 }
 
 
-static const Uint32 MIN_LOOP_TIME = 1000/FRAME_RATE;
-static const size_t WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
-static const size_t BYTES_PER_PIXEL = 32;
-static const size_t POSITION_LOCATION = 0;
-static const size_t GRID_3D_SIZE = 2;
+int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs des voxels (donc en fonction du nombre de subdivisions)
+	
+	if(nbSub<=0){
+		cerr << "Nombre de subdivisions incorrect. Arret du programme." << endl;
+		exit(0);
+	}
+	
+	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
+	int* tabVoxel = new int[tailleTabVoxel];
+
+	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
+		tabVoxel[i] = 0;
+	}
+	
+	return tabVoxel;
+	
+}
+
+int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF){	//on calcule les intersections et on renvoit le nombre d'intersections max (utile pour mettre la couleur plus loin)
+
+	double cubeSize = GRID_3D_SIZE/(double)nbSub;
+	double halfCubeSize = cubeSize/2;
+	
+	//TESTS DE TOUTES LES INTERSECTIONS
+	int nbIntersectionMax = 0;
+	
+	//Pour chaque cube
+	for(int k=0;k<nbSub;++k){
+		for(int j=0;j<nbSub;++j){
+			for(int i=0;i<nbSub;++i){
+				int currentVoxel = i + nbSub*j + nbSub*nbSub*k;
+				double posX =  i*cubeSize -1;
+				double posY = -j*cubeSize +1;
+				double posZ = -k*cubeSize +1;
+				Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
+				
+				//Pour chaque face
+				for(int n=0;n<nbFace;++n){
+					if(aabbTriboxOverlapTest(currentCube, tabF[n])){
+						tabVoxel[currentVoxel]++;
+					}
+				}
+				if(tabVoxel[currentVoxel] > nbIntersectionMax){
+					nbIntersectionMax = tabVoxel[currentVoxel];
+				}
+			}
+		} 
+	}
+	return nbIntersectionMax;
+}
+
+
 
 /*************************************/
 /*             MAIN                  */
 /*************************************/
-
 int main(int argc, char** argv) {
 
 	/* ************************************************************* */
@@ -363,55 +418,6 @@ int main(int argc, char** argv) {
 	}
 
 	fclose(fichier);
-	
-	//CREATION DE LA GRILLE 3D DE VOXELS
-	int nbSub = -1;
-	
-	cout << endl <<" > Entrer un nombre de subdivisions : ";
-	cin >>nbSub;
-	
-	while(!(nbSub) || (nbSub<=0)){
-		cin.clear();
-		cin.ignore(numeric_limits<streamsize>::max(), '\n'); //efface la mauvaise ligne du buffer
-		cout << endl <<" > Entrer un nombre de subdivisions : ";
-		cin >> nbSub;
-	}
-		
-	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
-	int* tabVoxel = new int[tailleTabVoxel];
-
-	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
-		tabVoxel[i] = 0;
-	}
-	
-	double cubeSize = GRID_3D_SIZE/(double)nbSub;
-	double halfCubeSize = cubeSize/2;
-	
-	//TESTS DE TOUTES LES INTERSECTIONS
-	int nbIntersectionMax = 0;
-	
-	//Pour chaque cube
-	for(int k=0;k<nbSub;++k){
-		for(int j=0;j<nbSub;++j){
-			for(int i=0;i<nbSub;++i){
-				int currentVoxel = i + nbSub*j + nbSub*nbSub*k;
-				double posX =  i*cubeSize -1;
-				double posY = -j*cubeSize +1;
-				double posZ = -k*cubeSize +1;
-				Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
-				
-				//Pour chaque face
-				for(int n=0;n<nbFace;++n){
-					if(aabbTriboxOverlapTest(currentCube, tabF[n])){
-						tabVoxel[currentVoxel]++;
-					}
-				}
-				if(tabVoxel[currentVoxel] > nbIntersectionMax){
-					nbIntersectionMax = tabVoxel[currentVoxel];
-				}
-			}
-		} 
-	}
 	
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
@@ -511,8 +517,6 @@ int main(int argc, char** argv) {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	
-
-
 	// Creation des Shaders
 	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
 	if(!program){
@@ -520,7 +524,6 @@ int main(int argc, char** argv) {
 		glDeleteVertexArrays(1, &cubeVAO);
 		delete[] tabV;
 		delete[] tabF;
-		delete[] tabVoxel;
 		return (EXIT_FAILURE);
 	}
 	glUseProgram(program);
@@ -553,7 +556,11 @@ int main(int argc, char** argv) {
 	int isLeftClicPressed = 0;
 	int savedClicX = -1;
 	int savedClicY = -1;
-	
+	int *tabVoxel = NULL;
+	int nbSub = 1;
+	bool changeNbSub = true;
+	int nbIntersectionMax = 0;
+		
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
 	/* ************************************************************* */
@@ -567,7 +574,16 @@ int main(int argc, char** argv) {
 
 		// Nettoyage de la fenêtre
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+
+		if(changeNbSub){ //si on a appuyé sur + ou -
+			cout<<" > Nombre de subdivisions : " <<nbSub<<endl;
+			delete[] tabVoxel;
+			tabVoxel = createTabVoxel(nbSub);
+			nbIntersectionMax = gridIntersection(tabVoxel, nbSub, nbFace, tabF);
+			changeNbSub = false;
+		}
+			
+		double cubeSize = GRID_3D_SIZE/(double)nbSub;
 
 		glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
 		MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
@@ -626,6 +642,17 @@ int main(int argc, char** argv) {
 						case SDLK_DOWN:
 							isArrowKeyDownPressed = 1;
 						break;
+						
+						case SDLK_KP_PLUS:
+							changeNbSub = true;
+							nbSub++;
+						break;
+						
+						case SDLK_KP_MINUS:
+							changeNbSub = true;
+							nbSub--;
+						break;
+						
 						
 						default:
 						break;
