@@ -44,13 +44,6 @@ typedef struct{
 	GLdouble near;
 	int nbVertices;
 }Cube;
-/*
-typedef struct{
-	GLdouble x;
-	GLdouble y;
-	GLdouble z;
-}Axis;
-*/
 
 /******************************************/
 /*          FUNCTIONS                     */
@@ -69,6 +62,7 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 	return newCube;
 }
 
+// Création du tableau des points du cube envoyé en paramètre à la fonction de test d'intersection AABB
 Point * createBoxPoints(Cube cube){
 	Point * boxPoints = new Point[8];
 	Point LTN; LTN.x = cube.left; LTN.y = cube.top; LTN.z = cube.near;
@@ -101,6 +95,7 @@ Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
 	return newFace;
 }
 
+// Création du tableau des points du triangle envoyé en paramètre à la fonction de test d'intersection AABB
 Point * createTriPoints(Face face){
 	Point * triPoints = new Point[3];
 	Point A,B,C;
@@ -123,38 +118,9 @@ Point * createTriPoints(Face face){
 	return triPoints;
 }
 
-/*
-Axis createAxis(GLdouble inX, GLdouble inY, GLdouble inZ){
-	Axis newAxis;
-	newAxis.x = inX;
-	newAxis.y = inY;
-	newAxis.z = inZ;
-	
-	return newAxis;
-}
-*/
 
-/*
-bool insideVertexTest(Cube cube, Face face){ // IT WORKS !
-	//cout << "cube.left : " << cube.left << " sommet.x : " << face.s1X << " cube.right : " << cube.right << endl;
-	//cout << "cube.bottom : " << cube.bottom << " sommet.y : " << face.s1Y << " cube.top : " << cube.top << endl;
-	if(face.s1->pos.x >= cube.left 		&& face.s1->pos.x <= cube.right
-	&& face.s1->pos.y >= cube.bottom 	&& face.s1->pos.y <= cube.top
-	&& face.s1->pos.z >= cube.far 		&& face.s1->pos.z <= cube.near)
-	{return true;}
-	if(face.s2->pos.x >= cube.left 		&& face.s2->pos.x <= cube.right
-	&& face.s2->pos.y >= cube.bottom 	&& face.s2->pos.y <= cube.top
-	&& face.s2->pos.z >= cube.far	 	&& face.s2->pos.z <= cube.near)
-	{return true;}
-	if(face.s3->pos.x >= cube.left 		&& face.s3->pos.x <= cube.right
-	&& face.s3->pos.y >= cube.bottom 	&& face.s3->pos.y <= cube.top
-	&& face.s3->pos.z >= cube.far 		&& face.s3->pos.z <= cube.near)
-	{return true;}
-	
-	return false;
-}
-*/
 /** OPERATIONS **/
+// produit vectoriel
 glm::vec3 crossProduct(glm::vec3 v1, glm::vec3 v2){
 	glm::vec3 result;
 	result.x = v1.y*v2.z - v1.z*v2.y;
@@ -164,10 +130,12 @@ glm::vec3 crossProduct(glm::vec3 v1, glm::vec3 v2){
 	return result;
 }
 
+// produit scalaire vecteur*vecteur
 GLdouble dotProduct(glm::vec3 v1, glm::vec3 v2){
 	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
 }
 
+// produit scalaire point*vecteur
 GLdouble dotProduct(Point p1, glm::vec3 v2){
 	/*
 	cout << "point.x : " << p1.x << " axe.x : " << v2.x << endl;
@@ -178,16 +146,18 @@ GLdouble dotProduct(Point p1, glm::vec3 v2){
 	return (p1.x*v2.x + p1.y*v2.y + p1.z*v2.z);
 }
 
-glm::vec3 vecSub(Point v1, Point v2){
+// création d'un vecteur à partir de 2 points
+glm::vec3 vecSub(Point p1, Point p2){
 	glm::vec3 result;
-	result.x = v1.x - v2.x;
-	result.y = v1.y - v2.y;
-	result.z = v1.z - v2.z;
+	result.x = p1.x - p2.x;
+	result.y = p1.y - p2.y;
+	result.z = p1.z - p2.z;
 	
 	return result;
 }
 
 /** MIN/MAX **/
+/*
 GLdouble min(GLdouble a, GLdouble b, GLdouble c){
 	GLdouble min = a;
 	if(b<min) min = b;
@@ -203,9 +173,11 @@ GLdouble max(GLdouble a, GLdouble b, GLdouble c){
 	
 	return max;
 }
+*/
 
-// version avec axe
+// Evaluation des distances des points de l'élément aux axes
 // pour les boxes
+// minimum
 GLdouble getminBoxPoints(Point * boxPoints, glm::vec3 axis){
 	GLdouble min = dotProduct(boxPoints[0], axis);
 	GLdouble dotprod = 0;
@@ -217,7 +189,7 @@ GLdouble getminBoxPoints(Point * boxPoints, glm::vec3 axis){
 	
 	return min;
 }
-
+// maximum
 GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
 	GLdouble max = dotProduct(boxPoints[0], axis);
 	GLdouble dotprod = 0;
@@ -231,6 +203,7 @@ GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
 }
 
 // pour les triangles
+// minimum
 GLdouble getminTriPoints(Point * triPoints, glm::vec3 axis){
 	GLdouble min = dotProduct(triPoints[0], axis);
 	GLdouble dotprod = 0;
@@ -242,7 +215,7 @@ GLdouble getminTriPoints(Point * triPoints, glm::vec3 axis){
 	
 	return min;
 }
-
+// maximum
 GLdouble getmaxTriPoints(Point * triPoints, glm::vec3 axis){
 	GLdouble max = dotProduct(triPoints[0], axis);
 	GLdouble dotprod = 0;
@@ -259,36 +232,46 @@ GLdouble getmaxTriPoints(Point * triPoints, glm::vec3 axis){
 /************************/
 /******INTERSECTION******/
 /************************/
-
+// fonction d'intersection selon un axe
+// on passe en paramètre : les points du cube, les points du triangle, l'axe considéré
 bool minmaxTest(Point * boxPoints, Point * triPoints, glm::vec3 axis){
+	// si le point du cube le plus proche de l'axe est plus éloigné que le point du triangle le plus loin de l'axe, pas de chevauchement des AABB selon cet axe. (oui, c'est tordu !)
 	if(getminBoxPoints(boxPoints, axis) > getmaxTriPoints(triPoints, axis)){
 		return false;
 	}
+	// inversement : si le point du cube le plus loin de l'axe est plus proche que le point du triangle le plus proche de l'axe, pas de chevauchement des AABB selon cet axe.
 	if(getmaxBoxPoints(boxPoints, axis) < getminTriPoints(triPoints, axis)){
 		return false;
 	}
-
+	// sinon : chevauchement des AABB, et on passe au test suivant.
 	return true;
 }
 
 
-
+// fonction principale de test de chevauchement des AABB
 bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
 	Point * boxPoints = createBoxPoints(testedCube);
 	Point * triPoints = createTriPoints(testedFace);
 	
+	// selon les trois axes du repère
 	glm::vec3 xAxis(1.,0.,0.);
 	if(!minmaxTest(boxPoints, triPoints, xAxis)){
+		delete[] boxPoints;
+		delete[] triPoints;
 		return false;
 	}
 	
 	glm::vec3 yAxis(0.,1.,0.);
 	if(!minmaxTest(boxPoints, triPoints, yAxis)){
+		delete[] boxPoints;
+		delete[] triPoints;
 		return false;
 	}
 	
 	glm::vec3 zAxis(0.,0.,1.);
 	if(!minmaxTest(boxPoints, triPoints, zAxis)){
+		delete[] boxPoints;
+		delete[] triPoints;
 		return false;
 	}
 	
@@ -299,26 +282,30 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
 	
 	glm::vec3 normal = crossProduct(edge1, edge2);
 	
+	// selon la normale au triangle
 	if(!minmaxTest(boxPoints, triPoints, normal)){
+		delete[] boxPoints;
+		delete[] triPoints;
 		return false;
 	}
 	
-	// 9 edges cross products
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, yAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, zAxis))){ return false;}
+	// selon les 9 produits vectoriels (directions du cube)^(edges du triangle)
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, yAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, zAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
 	
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, xAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, zAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, xAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, zAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
 	
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ return false;}
-	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge3, zAxis))){ return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge1, xAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge2, yAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
+	if(!minmaxTest(boxPoints, triPoints, crossProduct(edge3, zAxis))){ delete[] boxPoints; delete[] triPoints; return false;}
 	
 	delete[] boxPoints;
 	delete[] triPoints;
 	
+	// si tous les tests passent sans pouvoir trouver un axe selon lequel les deux AABB sont clairement séparées, alors on peut dire selon la SAT que les deux éléments s'intersectent.
 	return true;
 }
 
