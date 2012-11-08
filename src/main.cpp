@@ -21,21 +21,21 @@ static const size_t GRID_3D_SIZE = 2;
 
 using namespace std;
 
-typedef struct{
+typedef struct s_point{
 	GLdouble x;
 	GLdouble y;
 	GLdouble z;
 }Point;
 
-typedef struct{
+typedef struct s_vertex{
 	Point pos;
 }Vertex;
 
-typedef struct{
+typedef struct s_face{
 	Vertex *s1, *s2, *s3;
 }Face;
 
-typedef struct{
+typedef struct s_cube{
 	GLdouble left;
 	GLdouble right;
 	GLdouble top;
@@ -309,7 +309,7 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GL
 	delete[] boxPoints;
 	delete[] triPoints;
 	
-	// si tous les tests passent sans pouvoir trouver un axe selon lequel les deux AABB sont clairement séparées, alors on peut dire selon la SAT que les deux éléments s'intersectent.
+	// si tous les tests passent sans pouvoir trouver un axe selon lequel les deux AABB sont clairement séparées, alors on peut dire selon le SAT que les deux éléments s'intersectent.
 	return true;
 }
 
@@ -401,6 +401,7 @@ int main(int argc, char** argv) {
 		fread(&(tabV[n].pos.z), sizeof(GLdouble), 1, fichier);
 		fread(&(tabV[n].pos.y), sizeof(GLdouble), 1, fichier); //on remplit le tableau
 		
+		// on récupère les altitudes extrèmes
 		if(tabV[n].pos.y > altMax){
 			altMax = tabV[n].pos.y;
 		}else{
