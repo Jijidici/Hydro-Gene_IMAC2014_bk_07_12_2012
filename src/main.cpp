@@ -249,7 +249,11 @@ bool minmaxTest(Point * boxPoints, Point * triPoints, glm::vec3 axis){
 
 
 // fonction principale de test de chevauchement des AABB
-bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace){
+bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GLdouble altMax){
+	// pas besoin de tester les cubes au dessus de l'altitude max, et en dessous de l'altitude min.
+	if(testedCube.bottom > altMax){ return false;}
+	if(testedCube.top < altMin){ return false;}
+	
 	Point * boxPoints = createBoxPoints(testedCube);
 	Point * triPoints = createTriPoints(testedFace);
 	
@@ -328,7 +332,7 @@ int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs de
 	
 }
 
-int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF){	//on calcule les intersections et on renvoit le nombre d'intersections max (utile pour mettre la couleur plus loin)
+int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF, GLdouble altMin, GLdouble altMax){	//on calcule les intersections et on renvoit le nombre d'intersections max (utile pour mettre la couleur plus loin)
 
 	double cubeSize = GRID_3D_SIZE/(double)nbSub;
 	double halfCubeSize = cubeSize/2;
@@ -348,7 +352,7 @@ int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF){	//on cal
 				
 				//Pour chaque face
 				for(int n=0;n<nbFace;++n){
-					if(aabbTriboxOverlapTest(currentCube, tabF[n])){
+					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
 						tabVoxel[currentVoxel]++;
 					}
 				}
@@ -385,14 +389,29 @@ int main(int argc, char** argv) {
 	cout << "Number of vertices : " << nbVertice << endl;
 	cout << "Number of faces : " << nbFace << endl;
 	
+	
+	// altitudes min et max de la carte
+	GLdouble altMin = 0.;
+	GLdouble altMax = 0.;
+	
 	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
 	Vertex* tabV = new Vertex[nbVertice]; //on crée le tableau 
 	for(int n=0;n<nbVertice;++n){
 		fread(&(tabV[n].pos.x), sizeof(GLdouble), 1, fichier);
 		fread(&(tabV[n].pos.z), sizeof(GLdouble), 1, fichier);
 		fread(&(tabV[n].pos.y), sizeof(GLdouble), 1, fichier); //on remplit le tableau
+		
+		if(tabV[n].pos.y > altMax){
+			altMax = tabV[n].pos.y;
+		}else{
+			if(tabV[n].pos.y < altMin){
+				altMin = tabV[n].pos.y;
+			}
+		}
+		
 	}
 	
+	cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << endl;
 	
 	//lecture des index des points qui constituent chaque face (idem)
 	Face* tabF = new Face[nbFace];
@@ -566,7 +585,7 @@ int main(int argc, char** argv) {
 			cout<<" > Nombre de subdivisions : " <<nbSub<<endl;
 			delete[] tabVoxel;
 			tabVoxel = createTabVoxel(nbSub);
-			nbIntersectionMax = gridIntersection(tabVoxel, nbSub, nbFace, tabF);
+			nbIntersectionMax = gridIntersection(tabVoxel, nbSub, nbFace, tabF, altMin, altMax);
 			changeNbSub = false;
 		}
 			
@@ -632,12 +651,12 @@ int main(int argc, char** argv) {
 						
 						case SDLK_KP_PLUS:
 							changeNbSub = true;
-							nbSub++;
+							nbSub *= 2;
 						break;
 						
 						case SDLK_KP_MINUS:
 							changeNbSub = true;
-							nbSub--;
+							nbSub /= 2;
 						break;
 						
 						
