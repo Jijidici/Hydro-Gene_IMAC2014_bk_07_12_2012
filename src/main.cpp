@@ -341,6 +341,7 @@ int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF, GLdouble 
 	int nbIntersectionMax = 0;
 	
 	//Pour chaque cube
+	//#pragma openmp parallel_for
 	for(int k=0;k<nbSub;++k){
 		for(int j=0;j<nbSub;++j){
 			for(int i=0;i<nbSub;++i){
@@ -658,6 +659,11 @@ int main(int argc, char** argv) {
 						case SDLK_KP_MINUS:
 							changeNbSub = true;
 							nbSub /= 2;
+						break;
+						
+						case SDLK_SPACE:
+							changeNbSub = true;
+							nbSub = 32;
 						break;
 						
 						
