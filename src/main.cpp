@@ -392,15 +392,21 @@ int main(int argc, char** argv) {
 	
 	
 	// altitudes min et max de la carte
-	GLdouble altMin = 0.;
-	GLdouble altMax = 0.;
+	GLdouble altMin = 0.0;
+	GLdouble altMax = 0.015;
 	
-	//lecture des coordonnées de chaque vertex (tableau contenant les trois coordonnées de chaque vertex mises à la suite)
-	Vertex* tabV = new Vertex[nbVertice]; //on crée le tableau 
-	for(int n=0;n<nbVertice;++n){
-		fread(&(tabV[n].pos.x), sizeof(GLdouble), 1, fichier);
-		fread(&(tabV[n].pos.z), sizeof(GLdouble), 1, fichier);
-		fread(&(tabV[n].pos.y), sizeof(GLdouble), 1, fichier); //on remplit le tableau
+	GLdouble * positionsData = new GLdouble[3*nbVertice];
+	fread(positionsData, sizeof(GLdouble), 3*nbVertice, fichier); // to read the positions of the vertices
+	
+	GLuint * facesData = new GLuint[3*nbFace];
+	fread(facesData, sizeof(GLuint), 3*nbFace, fichier); // to read the indexes of the vertices which compose each face
+	
+	Vertex * tabV = new Vertex[nbVertice];
+	
+	for(int n=0;n<nbVertice;++n){ // to create the vertices tab
+		tabV[n].pos.x = positionsData[3*n];
+		tabV[n].pos.z = positionsData[3*n+1];
+		tabV[n].pos.y = positionsData[3*n+2];
 		
 		// on récupère les altitudes extrèmes
 		if(tabV[n].pos.y > altMax){
@@ -414,17 +420,18 @@ int main(int argc, char** argv) {
 	
 	cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << endl;
 	
-	//lecture des index des points qui constituent chaque face (idem)
-	Face* tabF = new Face[nbFace];
+	Face * tabF = new Face[nbFace];
 	GLuint vertexCoordsOffset[3];
+	
+	// creation of the faces
 	for(int n=0;n<nbFace;++n){
-		fread(vertexCoordsOffset, 3*sizeof(GLuint), 1, fichier);
+		for(size_t i = 0; i < 3; ++i){
+			vertexCoordsOffset[i] = facesData[3*n+i];
+		}
 		tabF[n].s1 = tabV + vertexCoordsOffset[0] -1;
 		tabF[n].s2 = tabV + vertexCoordsOffset[1] -1;
 		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
 	}
-
-	fclose(fichier);
 	
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
@@ -770,6 +777,9 @@ int main(int argc, char** argv) {
 	// Destruction des ressources OpenGL
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteVertexArrays(1, &cubeVAO);
+
+	delete[] positionsData;
+	delete[] facesData;
 
 	delete[] tabV;
 	delete[] tabF;
