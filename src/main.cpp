@@ -399,8 +399,8 @@ int main(int argc, char** argv) {
 	GLdouble * positionsData = new GLdouble[3*nbVertice];
 	fread(positionsData, sizeof(GLdouble), 3*nbVertice, fichier); // to read the positions of the vertices
 	
-	GLuint * facesData = new GLuint[3*nbFace];
-	fread(facesData, sizeof(GLuint), 3*nbFace, fichier); // to read the indexes of the vertices which compose each face
+	uint32_t * facesData = new uint32_t[3*nbFace];
+	fread(facesData, sizeof(uint32_t), 3*nbFace, fichier); // to read the indexes of the vertices which compose each face
 	
 	Vertex * tabV = new Vertex[nbVertice];
 	
@@ -427,7 +427,7 @@ int main(int argc, char** argv) {
 	std::cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << std::endl;
 	
 	Face * tabF = new Face[nbFace];
-	GLuint vertexCoordsOffset[3];
+	uint32_t vertexCoordsOffset[3];
 	
 	// creation of the faces
 	for(uint32_t n=0;n<nbFace;++n){
@@ -581,8 +581,8 @@ int main(int argc, char** argv) {
 	uint8_t isArrowKeyLeftPressed = 0;
 	uint8_t isArrowKeyRightPressed = 0;
 	uint8_t isLeftClicPressed = 0;
-	uint8_t savedClicX = -1;
-	uint8_t savedClicY = -1;
+	uint16_t savedClicX = -1;
+	uint16_t savedClicY = -1;
 	uint32_t *tabVoxel = NULL;
 	uint32_t nbSub = 1;
 	bool changeNbSub = true;
