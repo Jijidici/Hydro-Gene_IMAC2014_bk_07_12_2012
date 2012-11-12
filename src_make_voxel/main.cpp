@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include "imac2gl3/shader_tools.hpp"
+#include "types.hpp"
 
 #define FRAME_RATE 60
 
@@ -20,30 +21,6 @@ static const size_t WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
 static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
 static const size_t GRID_3D_SIZE = 2;
-
-typedef struct s_point{
-	GLdouble * x;
-	GLdouble * y;
-	GLdouble * z;
-}Point;
-
-typedef struct s_vertex{
-	Point pos;
-}Vertex;
-
-typedef struct s_face{
-	Vertex *s1, *s2, *s3;
-}Face;
-
-typedef struct s_cube{
-	GLdouble left;
-	GLdouble right;
-	GLdouble top;
-	GLdouble bottom;
-	GLdouble far;
-	GLdouble near;
-	uint8_t nbVertices;
-}Cube;
 
 /******************************************/
 /*          FUNCTIONS                     */

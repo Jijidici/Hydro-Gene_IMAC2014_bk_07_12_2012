@@ -2,27 +2,38 @@ CC = g++
 CFLAGS = -Wall -ansi -pedantic -I include -O2
 LDFLAGS = -lSDL -lGL -fopenMP
 
-SRC_PATH = src
+SRC_VOXEL_PATH = src_make_voxel
+SRC_DISPLAY_PATH = src_display
 BIN_PATH = bin
 
-EXEC = hydro-gene_voxel_1
+EXEC_VOXEL = hg_voxel_maker
+EXEC_DISPLAY = hg_display
 
-SRC_FILES = $(shell find $(SRC_PATH) -type f -name '*.cpp')
-OBJ_FILES = $(patsubst $(SRC_PATH)/%.cpp, $(SRC_PATH)/%.o, $(SRC_FILES))
+SRC_VOXEL_FILES = $(shell find $(SRC_VOXEL_PATH) -type f -name '*.cpp')
+OBJ_VOXEL_FILES = $(patsubst $(SRC_VOXEL_PATH)/%.cpp, $(SRC_VOXEL_PATH)/%.o, $(SRC_VOXEL_FILES))
 
-all: $(BIN_PATH)/$(EXEC)
+SRC_DISPLAY_FILES = $(shell find $(SRC_DISPLAY_PATH) -type f -name '*.cpp')
+OBJ_DISPLAY_FILES = $(patsubst $(SRC_DISPLAY_PATH)/%.cpp, $(SRC_DISPLAY_PATH)/%.o, $(SRC_DISPLAY_FILES))
 
-$(BIN_PATH)/$(EXEC): $(OBJ_FILES) $(SRC_PATH)/glew-1.9/glew.o
+all: $(BIN_PATH)/$(EXEC_VOXEL) $(BIN_PATH)/$(EXEC_DISPLAY)
+
+$(BIN_PATH)/$(EXEC_VOXEL): $(OBJ_VOXEL_FILES) $(SRC_VOXEL_PATH)/glew-1.9/glew.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(SRC_PATH)/glew-1.9/glew.o: $(SRC_PATH)/glew-1.9/glew.c
+$(BIN_PATH)/$(EXEC_DISPLAY): $(OBJ_DISPLAY_FILES)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(SRC_VOXEL_PATH)/glew-1.9/glew.o: $(SRC_VOXEL_PATH)/glew-1.9/glew.c
 	$(CC) -c -o $@ $(CFLAGS) $^ 
 
-$(SRC_PATH)/%.o: $(SRC_PATH)/%.cpp
+$(SRC_VOXEL_PATH)/%.o: $(SRC_VOXEL_PATH)/%.cpp
+	$(CC) -c -o $@ $(CFLAGS) $^ 
+
+$(SRC_DISPLAY_PATH)/%.o: $(SRC_DISPLAY_PATH)/%.cpp
 	$(CC) -c -o $@ $(CFLAGS) $^ 
 
 clean:
-	rm $(OBJ_FILES) $(SRC_PATH)/glew-1.9/glew.o
+	rm $(OBJ_VOXEL_FILES) $(OBJ_DISPLAY_FILES) $(SRC_VOXEL_PATH)/glew-1.9/glew.o
 
 cleanall:
-	rm $(BIN_PATH)/$(EXEC) $(OBJ_FILES) $(SRC_PATH)/glew-1.9/glew.o
+	rm $(BIN_PATH)/$(EXEC_VOXEL) $(BIN_PATH)/$(EXEC_DISPLAY) $(OBJ_VOXEL_FILES) $(OBJ_DISPLAY_FILES) $(SRC_VOXEL_PATH)/glew-1.9/glew.o
