@@ -20,10 +20,13 @@ all: $(BIN_PATH)/$(EXEC_VOXEL) $(BIN_PATH)/$(EXEC_DISPLAY)
 $(BIN_PATH)/$(EXEC_VOXEL): $(OBJ_VOXEL_FILES) $(SRC_VOXEL_PATH)/glew-1.9/glew.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BIN_PATH)/$(EXEC_DISPLAY): $(OBJ_DISPLAY_FILES)
+$(BIN_PATH)/$(EXEC_DISPLAY): $(OBJ_DISPLAY_FILES) $(SRC_DISPLAY_PATH)/glew-1.9/glew.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(SRC_VOXEL_PATH)/glew-1.9/glew.o: $(SRC_VOXEL_PATH)/glew-1.9/glew.c
+	$(CC) -c -o $@ $(CFLAGS) $^ 
+
+$(SRC_DISPLAY_PATH)/glew-1.9/glew.o: $(SRC_DISPLAY_PATH)/glew-1.9/glew.c
 	$(CC) -c -o $@ $(CFLAGS) $^ 
 
 $(SRC_VOXEL_PATH)/%.o: $(SRC_VOXEL_PATH)/%.cpp

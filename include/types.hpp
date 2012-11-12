@@ -1,6 +1,8 @@
 #ifndef __TYPE_HPP__
 #define __TYPE_HPP__
 
+#include <GL/glew.h>
+
 typedef struct s_point{
 	GLdouble * x;
 	GLdouble * y;
@@ -24,5 +26,27 @@ typedef struct s_cube{
 	GLdouble near;
 	uint8_t nbVertices;
 }Cube;
+
+Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBottom, GLdouble inFar, GLdouble inNear){
+	Cube newCube;
+	newCube.left = inLeft;
+	newCube.right = inRight;
+	newCube.top = inTop;
+	newCube.bottom = inBottom;
+	newCube.far = inFar;
+	newCube.near = inNear;
+	newCube.nbVertices = 36;
+	
+	return newCube;
+}
+
+Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
+	Face newFace;
+	newFace.s1 = inS1;
+	newFace.s2 = inS2;
+	newFace.s3 = inS3;
+	
+	return newFace;
+}
 
 #endif
