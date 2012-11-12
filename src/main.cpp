@@ -9,6 +9,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <stdint.h>
+
 #include "imac2gl3/shader_tools.hpp"
 
 #define FRAME_RATE 60
@@ -40,7 +42,7 @@ typedef struct s_cube{
 	GLdouble bottom;
 	GLdouble far;
 	GLdouble near;
-	int nbVertices;
+	uint8_t nbVertices;
 }Cube;
 
 /******************************************/
@@ -178,7 +180,7 @@ GLdouble max(GLdouble a, GLdouble b, GLdouble c){
 GLdouble getminBoxPoints(Point * boxPoints, glm::vec3 axis){
 	GLdouble min = dotProduct(boxPoints[0], axis);
 	GLdouble dotprod = 0;
-	int i =0;
+	uint8_t i =0;
 	for(i = 1; i < 8; ++i){
 		dotprod = dotProduct(boxPoints[i], axis);
 		if(dotprod < min) min = dotprod;
@@ -190,7 +192,7 @@ GLdouble getminBoxPoints(Point * boxPoints, glm::vec3 axis){
 GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
 	GLdouble max = dotProduct(boxPoints[0], axis);
 	GLdouble dotprod = 0;
-	int i =0;
+	uint8_t i =0;
 	for(i = 1; i < 8; ++i){
 		dotprod = dotProduct(boxPoints[i], axis);
 		if(dotprod > max) max = dotprod;
@@ -204,7 +206,7 @@ GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
 GLdouble getminTriPoints(Point * triPoints, glm::vec3 axis){
 	GLdouble min = dotProduct(triPoints[0], axis);
 	GLdouble dotprod = 0;
-	int i =0;
+	uint8_t i =0;
 	for(i = 1; i < 3; ++i){
 		dotprod = dotProduct(triPoints[i], axis);
 		if(dotprod < min) min = dotprod;
@@ -216,7 +218,7 @@ GLdouble getminTriPoints(Point * triPoints, glm::vec3 axis){
 GLdouble getmaxTriPoints(Point * triPoints, glm::vec3 axis){
 	GLdouble max = dotProduct(triPoints[0], axis);
 	GLdouble dotprod = 0;
-	int i =0;
+	uint8_t i =0;
 	for(i = 1; i < 3; ++i){
 		dotprod = dotProduct(triPoints[i], axis);
 		if(dotprod > max) max = dotprod;
@@ -311,7 +313,7 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GL
 }
 
 
-int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs des voxels (donc en fonction du nombre de subdivisions)
+uint32_t* createTabVoxel(uint16_t nbSub){	//on alloue un tableau pr stocker les valeurs des voxels (donc en fonction du nombre de subdivisions)
 	
 	if(nbSub<=0){
 		std::cerr << "Nombre de subdivisions incorrect. Arret du programme." << std::endl;
@@ -319,7 +321,7 @@ int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs de
 	}
 	
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
-	int* tabVoxel = new int[tailleTabVoxel];
+	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 
 	for(size_t i = 0 ; i<tailleTabVoxel ; ++i){
 		tabVoxel[i] = 0;
@@ -329,27 +331,27 @@ int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs de
 	
 }
 
-int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF, GLdouble altMin, GLdouble altMax){	//on calcule les intersections et on renvoit le nombre d'intersections max (utile pour mettre la couleur plus loin)
+uint32_t gridIntersection(uint32_t* tabVoxel, uint16_t nbSub, uint32_t nbFace, Face* tabF, GLdouble altMin, GLdouble altMax){	//on calcule les intersections et on renvoit le nombre d'intersections max (utile pour mettre la couleur plus loin)
 
 	double cubeSize = GRID_3D_SIZE/(double)nbSub;
 	double halfCubeSize = cubeSize/2;
 	
 	//TESTS DE TOUTES LES INTERSECTIONS
-	int nbIntersectionMax = 0;
+	uint32_t nbIntersectionMax = 0;
 	
 	//Pour chaque cube
 	//#pragma openmp parallel_for
-	for(int k=0;k<nbSub;++k){
-		for(int j=0;j<nbSub;++j){
-			for(int i=0;i<nbSub;++i){
-				int currentVoxel = i + nbSub*j + nbSub*nbSub*k;
+	for(uint16_t k=0;k<nbSub;++k){
+		for(uint16_t j=0;j<nbSub;++j){
+			for(uint16_t i=0;i<nbSub;++i){
+				uint32_t currentVoxel = i + nbSub*j + nbSub*nbSub*k;
 				double posX =  i*cubeSize -1;
 				double posY = -j*cubeSize +1;
 				double posZ = -k*cubeSize +1;
 				Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
 				
 				//Pour chaque face
-				for(int n=0;n<nbFace;++n){
+				for(uint32_t n=0;n<nbFace;++n){
 					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
 						tabVoxel[currentVoxel]++;
 					}
@@ -383,7 +385,7 @@ int main(int argc, char** argv) {
 	if(NULL == fichier) std::cout << "impossible de charger le fichier" << std::endl;
 
 	//lecture du nombre de vertex et de faces, puis affichage ds la console
-	int nbVertice = 0, nbFace = 0;	
+	uint32_t nbVertice = 0, nbFace = 0;	
 	fread(&nbVertice, sizeof(nbVertice), 1, fichier);
 	fread(&nbFace, sizeof(nbFace), 1, fichier);
 	std::cout << "Number of vertices : " << nbVertice << std::endl;
@@ -402,7 +404,7 @@ int main(int argc, char** argv) {
 	
 	Vertex * tabV = new Vertex[nbVertice];
 	
-	for(int n=0;n<nbVertice;++n){ // to create the vertices tab
+	for(uint32_t n=0;n<nbVertice;++n){ // to create the vertices tab
 		tabV[n].pos.x = &positionsData[3*n];
 		tabV[n].pos.z = &positionsData[3*n+1];
 		tabV[n].pos.y = &positionsData[3*n+2];
@@ -428,7 +430,7 @@ int main(int argc, char** argv) {
 	GLuint vertexCoordsOffset[3];
 	
 	// creation of the faces
-	for(int n=0;n<nbFace;++n){
+	for(uint32_t n=0;n<nbFace;++n){
 		for(size_t i = 0; i < 3; ++i){
 			vertexCoordsOffset[i] = facesData[3*n+i];
 		}
@@ -574,17 +576,17 @@ int main(int argc, char** argv) {
 	float tmpAngleViewY = 0.;
 	float angleViewX = 0.;
 	float tmpAngleViewX = 0.;
-	int isArrowKeyUpPressed = 0;
-	int isArrowKeyDownPressed = 0;
-	int isArrowKeyLeftPressed = 0;
-	int isArrowKeyRightPressed = 0;
-	int isLeftClicPressed = 0;
-	int savedClicX = -1;
-	int savedClicY = -1;
-	int *tabVoxel = NULL;
-	int nbSub = 1;
+	uint8_t isArrowKeyUpPressed = 0;
+	uint8_t isArrowKeyDownPressed = 0;
+	uint8_t isArrowKeyLeftPressed = 0;
+	uint8_t isArrowKeyRightPressed = 0;
+	uint8_t isLeftClicPressed = 0;
+	uint8_t savedClicX = -1;
+	uint8_t savedClicY = -1;
+	uint32_t *tabVoxel = NULL;
+	uint32_t nbSub = 1;
 	bool changeNbSub = true;
-	int nbIntersectionMax = 0;
+	uint32_t nbIntersectionMax = 0;
 		
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
@@ -616,10 +618,10 @@ int main(int argc, char** argv) {
 		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
 		
 		// Affichage de la grille
-		for(int k=0;k<nbSub;++k){
-			for(int j=0;j<nbSub;++j){
-				for(int i=0;i<nbSub;++i){
-					int currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
+		for(uint32_t k=0;k<nbSub;++k){
+			for(uint32_t j=0;j<nbSub;++j){
+				for(uint32_t i=0;i<nbSub;++i){
+					uint32_t currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
 					if(currentNbIntersection != 0){
 						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, -(j*cubeSize-(GRID_3D_SIZE-cubeSize)/2), -(k*cubeSize-(GRID_3D_SIZE-cubeSize)/2))); //PLACEMENT OF EACH GRID CUBE
 						aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
