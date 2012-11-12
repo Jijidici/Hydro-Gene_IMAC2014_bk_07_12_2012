@@ -19,8 +19,6 @@ static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
 static const size_t GRID_3D_SIZE = 2;
 
-using namespace std;
-
 typedef struct s_point{
 	GLdouble * x;
 	GLdouble * y;
@@ -83,7 +81,7 @@ Point * createBoxPoints(Cube& cube){
 	boxPoints[6] = RBF;
 	boxPoints[7] = LBF;
 	
-	//cout << "test : " << *boxPoints[0].x << endl;
+	//std::cout << "test : " << *boxPoints[0].x << std::endl;
 	
 	return boxPoints;
 }
@@ -316,7 +314,7 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GL
 int* createTabVoxel(int nbSub){	//on alloue un tableau pr stocker les valeurs des voxels (donc en fonction du nombre de subdivisions)
 	
 	if(nbSub<=0){
-		cerr << "Nombre de subdivisions incorrect. Arret du programme." << endl;
+		std::cerr << "Nombre de subdivisions incorrect. Arret du programme." << std::endl;
 		exit(0);
 	}
 	
@@ -359,7 +357,7 @@ int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF, GLdouble 
 				if(tabVoxel[currentVoxel] > nbIntersectionMax){
 					nbIntersectionMax = tabVoxel[currentVoxel];
 				}
-				//cout << "test : " << tabVoxel[currentVoxel] << endl;
+				//std::cout << "test : " << tabVoxel[currentVoxel] << std::endl;
 			}
 		} 
 	}
@@ -382,14 +380,14 @@ int main(int argc, char** argv) {
 	//on charge le fichier en mode "read binary"
 	FILE *fichier = NULL;
 	fichier = fopen("hg_petit/page_1.data", "rb");
-	if(NULL == fichier) cout << "impossible de charger le fichier" << endl;
+	if(NULL == fichier) std::cout << "impossible de charger le fichier" << std::endl;
 
 	//lecture du nombre de vertex et de faces, puis affichage ds la console
 	int nbVertice = 0, nbFace = 0;	
 	fread(&nbVertice, sizeof(nbVertice), 1, fichier);
 	fread(&nbFace, sizeof(nbFace), 1, fichier);
-	cout << "Number of vertices : " << nbVertice << endl;
-	cout << "Number of faces : " << nbFace << endl;
+	std::cout << "Number of vertices : " << nbVertice << std::endl;
+	std::cout << "Number of faces : " << nbFace << std::endl;
 	
 	
 	// altitudes min et max de la carte
@@ -420,11 +418,11 @@ int main(int argc, char** argv) {
 	}
 	/*
 	for(size_t n = 0; n < 10; ++n){
-		cout << endl << "n : " << n << endl;
-		cout << "x : " << *tabV[n].pos.x << " y : " << *tabV[n].pos.y << " z : " << *tabV[n].pos.z << endl;
+		std::cout << endl << "n : " << n << std::endl;
+		std::cout << "x : " << *tabV[n].pos.x << " y : " << *tabV[n].pos.y << " z : " << *tabV[n].pos.z << std::endl;
 	}
 	*/
-	cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << endl;
+	std::cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << std::endl;
 	
 	Face * tabF = new Face[nbFace];
 	GLuint vertexCoordsOffset[3];
@@ -440,10 +438,10 @@ int main(int argc, char** argv) {
 	}
 	/*
 	for(size_t i = 0; i < 10; ++i){
-		cout << endl << "i : " << i << endl;
-		cout << "s1 x : " << *tabF[i].s1->pos.x << " s1 y : " << *tabF[i].s1->pos.y << " s1 z : " << *tabF[i].s1->pos.z << endl;
-		cout << "s2 x : " << *tabF[i].s2->pos.x << " s2 y : " << *tabF[i].s2->pos.y << " s2 z : " << *tabF[i].s2->pos.z << endl;
-		cout << "s3 x : " << *tabF[i].s3->pos.x << " s3 y : " << *tabF[i].s3->pos.y << " s3 z : " << *tabF[i].s3->pos.z << endl;
+		std::cout << endl << "i : " << i << std::endl;
+		std::cout << "s1 x : " << *tabF[i].s1->pos.x << " s1 y : " << *tabF[i].s1->pos.y << " s1 z : " << *tabF[i].s1->pos.z << std::endl;
+		std::cout << "s2 x : " << *tabF[i].s2->pos.x << " s2 y : " << *tabF[i].s2->pos.y << " s2 z : " << *tabF[i].s2->pos.z << std::endl;
+		std::cout << "s3 x : " << *tabF[i].s3->pos.x << " s3 y : " << *tabF[i].s3->pos.y << " s3 z : " << *tabF[i].s3->pos.z << std::endl;
 	}
 	*/
 	/* ************************************************************* */
@@ -603,7 +601,7 @@ int main(int argc, char** argv) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if(changeNbSub){ //si on a appuyé sur + ou -
-			cout<<" > Nombre de subdivisions : " <<nbSub<<endl;
+			std::cout<<" > Nombre de subdivisions : " <<nbSub<<std::endl;
 			delete[] tabVoxel;
 			tabVoxel = createTabVoxel(nbSub);
 			nbIntersectionMax = gridIntersection(tabVoxel, nbSub, nbFace, tabF, altMin, altMax);
