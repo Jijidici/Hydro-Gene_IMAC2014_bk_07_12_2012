@@ -22,9 +22,9 @@ static const size_t GRID_3D_SIZE = 2;
 using namespace std;
 
 typedef struct s_point{
-	GLdouble x;
-	GLdouble y;
-	GLdouble z;
+	GLdouble * x;
+	GLdouble * y;
+	GLdouble * z;
 }Point;
 
 typedef struct s_vertex{
@@ -63,16 +63,16 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 }
 
 // Création du tableau des points du cube envoyé en paramètre à la fonction de test d'intersection AABB
-Point * createBoxPoints(Cube cube){
+Point * createBoxPoints(Cube& cube){
 	Point * boxPoints = new Point[8];
-	Point LTN; LTN.x = cube.left; LTN.y = cube.top; LTN.z = cube.near;
-	Point RTN; RTN.x = cube.right; RTN.y = cube.top; RTN.z = cube.near;
-	Point RBN; RBN.x = cube.right; RBN.y = cube.bottom; RBN.z = cube.near;
-	Point LBN; LBN.x = cube.left; LBN.y = cube.bottom; LBN.z = cube.near;
-	Point LTF; LTF.x = cube.left; LTF.y = cube.top; LTF.z = cube.far;
-	Point RTF; RTF.x = cube.right; RTF.y = cube.top; RTF.z = cube.far;
-	Point RBF; RBF.x = cube.right; RBF.y = cube.bottom; RBF.z = cube.far;
-	Point LBF; LBF.x = cube.left; LBF.y = cube.bottom; LBF.z = cube.far;
+	Point LTN; LTN.x = &(cube.left); 	LTN.y = &(cube.top); 		LTN.z = &(cube.near);
+	Point RTN; RTN.x = &(cube.right); 	RTN.y = &(cube.top); 		RTN.z = &(cube.near);
+	Point RBN; RBN.x = &(cube.right);	RBN.y = &(cube.bottom);		RBN.z = &(cube.near);
+	Point LBN; LBN.x = &(cube.left); 	LBN.y = &(cube.bottom); 	LBN.z = &(cube.near);
+	Point LTF; LTF.x = &(cube.left); 	LTF.y = &(cube.top);		LTF.z = &(cube.far);
+	Point RTF; RTF.x = &(cube.right);	RTF.y = &(cube.top); 		RTF.z = &(cube.far);
+	Point RBF; RBF.x = &(cube.right); 	RBF.y = &(cube.bottom); 	RBF.z = &(cube.far);
+	Point LBF; LBF.x = &(cube.left); 	LBF.y = &(cube.bottom); 	LBF.z = &(cube.far);
 	
 	boxPoints[0] = LTN;
 	boxPoints[1] = RTN;
@@ -82,6 +82,8 @@ Point * createBoxPoints(Cube cube){
 	boxPoints[5] = RTF;
 	boxPoints[6] = RBF;
 	boxPoints[7] = LBF;
+	
+	//cout << "test : " << *boxPoints[0].x << endl;
 	
 	return boxPoints;
 }
@@ -137,13 +139,10 @@ GLdouble dotProduct(glm::vec3 v1, glm::vec3 v2){
 
 // produit scalaire point*vecteur
 GLdouble dotProduct(Point p1, glm::vec3 v2){
-	/*
-	cout << "point.x : " << p1.x << " axe.x : " << v2.x << endl;
-	cout << "point.y : " << p1.y << " axe.y : " << v2.y << endl;
-	cout << "point.z : " << p1.z << " axe.z : " << v2.z << endl;
-	cout << endl;
-	*/
-	return (p1.x*v2.x + p1.y*v2.y + p1.z*v2.z);
+	GLdouble p1X = *(p1.x); GLdouble p1Y = *(p1.y); GLdouble p1Z = *(p1.z);
+	GLdouble v2X = v2.x; GLdouble v2Y = v2.y; GLdouble v2Z = v2.z;
+	
+	return (p1X*v2X + p1Y*v2Y + p1Z*v2Z);
 }
 
 // création d'un vecteur à partir de 2 points
@@ -198,7 +197,7 @@ GLdouble getmaxBoxPoints(Point * boxPoints, glm::vec3 axis){
 		dotprod = dotProduct(boxPoints[i], axis);
 		if(dotprod > max) max = dotprod;
 	}
-	
+
 	return max;
 }
 
@@ -360,9 +359,11 @@ int gridIntersection(int* tabVoxel, int nbSub, int nbFace, Face* tabF, GLdouble 
 				if(tabVoxel[currentVoxel] > nbIntersectionMax){
 					nbIntersectionMax = tabVoxel[currentVoxel];
 				}
+				//cout << "test : " << tabVoxel[currentVoxel] << endl;
 			}
 		} 
 	}
+	
 	return nbIntersectionMax;
 }
 
@@ -404,20 +405,25 @@ int main(int argc, char** argv) {
 	Vertex * tabV = new Vertex[nbVertice];
 	
 	for(int n=0;n<nbVertice;++n){ // to create the vertices tab
-		tabV[n].pos.x = positionsData[3*n];
-		tabV[n].pos.z = positionsData[3*n+1];
-		tabV[n].pos.y = positionsData[3*n+2];
+		tabV[n].pos.x = &positionsData[3*n];
+		tabV[n].pos.z = &positionsData[3*n+1];
+		tabV[n].pos.y = &positionsData[3*n+2];
 		
 		// on récupère les altitudes extrèmes
-		if(tabV[n].pos.y > altMax){
-			altMax = tabV[n].pos.y;
+		if(*(tabV[n].pos.y) > altMax){
+			altMax = *(tabV[n].pos.y);
 		}else{
-			if(tabV[n].pos.y < altMin){
-				altMin = tabV[n].pos.y;
+			if(*(tabV[n].pos.y) < altMin){
+				altMin = *(tabV[n].pos.y);
 			}
 		}
 	}
-	
+	/*
+	for(size_t n = 0; n < 10; ++n){
+		cout << endl << "n : " << n << endl;
+		cout << "x : " << *tabV[n].pos.x << " y : " << *tabV[n].pos.y << " z : " << *tabV[n].pos.z << endl;
+	}
+	*/
 	cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << endl;
 	
 	Face * tabF = new Face[nbFace];
@@ -432,7 +438,14 @@ int main(int argc, char** argv) {
 		tabF[n].s2 = tabV + vertexCoordsOffset[1] -1;
 		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
 	}
-	
+	/*
+	for(size_t i = 0; i < 10; ++i){
+		cout << endl << "i : " << i << endl;
+		cout << "s1 x : " << *tabF[i].s1->pos.x << " s1 y : " << *tabF[i].s1->pos.y << " s1 z : " << *tabF[i].s1->pos.z << endl;
+		cout << "s2 x : " << *tabF[i].s2->pos.x << " s2 y : " << *tabF[i].s2->pos.y << " s2 z : " << *tabF[i].s2->pos.z << endl;
+		cout << "s3 x : " << *tabF[i].s3->pos.x << " s3 y : " << *tabF[i].s3->pos.y << " s3 z : " << *tabF[i].s3->pos.z << endl;
+	}
+	*/
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
 	/* ************************************************************* */
