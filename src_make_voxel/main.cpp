@@ -235,14 +235,17 @@ int main(int argc, char** argv) {
 	
 	//CHARGEMENT FICHIERS .DATA
 	//on charge le fichier en mode "read binary"
-	FILE *fichier = NULL;
-	fichier = fopen("terrain_data/page_1.data", "rb");
-	if(NULL == fichier) std::cout << "impossible de charger le fichier" << std::endl;
+	FILE *dataFile = NULL;
+	dataFile = fopen("terrain_data/page_1.data", "rb");
+	if(NULL == dataFile){
+		std::cout << "[!] > Impossible to load the file dataFile" << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	//lecture du nombre de vertex et de faces, puis affichage ds la console
 	uint32_t nbVertice = 0, nbFace = 0;	
-	fread(&nbVertice, sizeof(nbVertice), 1, fichier);
-	fread(&nbFace, sizeof(nbFace), 1, fichier);
+	fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
+	fread(&nbFace, sizeof(nbFace), 1, dataFile);
 	std::cout << "Number of vertices : " << nbVertice << std::endl;
 	std::cout << "Number of faces : " << nbFace << std::endl;
 	
@@ -252,11 +255,13 @@ int main(int argc, char** argv) {
 	GLdouble altMax = 0.015;
 	
 	GLdouble * positionsData = new GLdouble[3*nbVertice];
-	fread(positionsData, sizeof(GLdouble), 3*nbVertice, fichier); // to read the positions of the vertices
+	fread(positionsData, sizeof(GLdouble), 3*nbVertice, dataFile); // to read the positions of the vertices
 	
 	uint32_t * facesData = new uint32_t[3*nbFace];
-	fread(facesData, sizeof(uint32_t), 3*nbFace, fichier); // to read the indexes of the vertices which compose each face
+	fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
 	
+	fclose(dataFile);
+
 	Vertex * tabV = new Vertex[nbVertice];
 	
 	for(uint32_t n=0;n<nbVertice;++n){ // to create the vertices tab
@@ -264,7 +269,7 @@ int main(int argc, char** argv) {
 		tabV[n].pos.z = &positionsData[3*n+1];
 		tabV[n].pos.y = &positionsData[3*n+2];
 		
-		// on récupère les altitudes extrèmes
+		// on récupère les altitudes extremes
 		if(*(tabV[n].pos.y) > altMax){
 			altMax = *(tabV[n].pos.y);
 		}else{
@@ -294,11 +299,14 @@ int main(int argc, char** argv) {
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
 	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 	
+	for(uint32_t n=0;n<tailleTabVoxel;++n){
+		tabVoxel[n]=0;
+	}
+
 	double cubeSize = GRID_3D_SIZE/(double)nbSub;
 	double halfCubeSize = cubeSize/2;
 	
 	//INTERSECTION PROCESSING
-	uint32_t nbIntersectionMax = 0;
 	
 	//For each cube
 	#pragma omp parallel for
@@ -314,18 +322,25 @@ int main(int argc, char** argv) {
 				//For each Face
 				for(uint32_t n=0;n<nbFace;++n){
 					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
-						tabVoxel[currentVoxel]++;
+						tabVoxel[currentVoxel] += 1;
 					}
-				}
-				if(tabVoxel[currentVoxel] > nbIntersectionMax){
-					nbIntersectionMax = tabVoxel[currentVoxel];
 				}
 			}
 		} 
 	}
 	
-	//ECRITURE DANS LE FICHIER DE VOXEL |||| A FAIRE
-	
+	//WRITTING THE VOXEL-INTERSECTION FILE
+	FILE* voxelFile = NULL;
+	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "wb");
+	if(NULL == voxelFile){
+		std::cout << "[!] > Impossible to load the file voxelFile" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	fwrite(&nbSub, sizeof(uint32_t), 1, voxelFile);
+	fwrite(tabVoxel, tailleTabVoxel*sizeof(uint32_t), 1, voxelFile);
+
+	fclose(voxelFile);
 	
 	delete[] positionsData;
 	delete[] facesData;

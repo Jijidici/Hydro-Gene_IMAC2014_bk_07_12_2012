@@ -22,17 +22,30 @@ static const size_t GRID_3D_SIZE = 2;
 
 int main(int argc, char** argv){
 	
-	// LECTURE DU FICHIER DATA DE VOXELS  ||||| A FAIRE 
-	//TMP
-	uint32_t nbSub = 50;
-	uint32_t* tabVoxel = new uint32_t[nbSub*nbSub*nbSub];
+	// OPEN AND READ THE VOXEL-INTERSECTION FILE
+	FILE* voxelFile = NULL;
+	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "rb");
+	if(NULL == voxelFile){
+		std::cout << "[!] > Impossible to load the file voxelFile" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	uint32_t nbSub = 1;
+	fread(&nbSub, sizeof(uint32_t), 1, voxelFile);
+
+	uint32_t lengthTabVoxel = nbSub*nbSub*nbSub;
+	uint32_t* tabVoxel = new uint32_t[lengthTabVoxel];
+	fread(tabVoxel, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
+
+	fclose(voxelFile);
 	
-	uint32_t nbIntersectionMax = 23;
-	for(uint32_t n=0;n<nbSub*nbSub*nbSub;++n){
-		tabVoxel[n] = n%23;
-	} 
-	//TMP END
-	
+	uint32_t nbIntersectionMax = 0;
+	for(uint32_t i=0; i<lengthTabVoxel;++i){
+		if(tabVoxel[i]>nbIntersectionMax){
+			nbIntersectionMax = tabVoxel[i];
+		}
+	}
+
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
 	/* ************************************************************* */
