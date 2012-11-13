@@ -27,6 +27,10 @@ typedef struct s_cube{
 	uint8_t nbVertices;
 }Cube;
 
+/******************************************/
+/*          FUNCTIONS                     */
+/******************************************/
+
 Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBottom, GLdouble inFar, GLdouble inNear){
 	Cube newCube;
 	newCube.left = inLeft;
@@ -38,6 +42,16 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 	newCube.nbVertices = 36;
 	
 	return newCube;
+}
+
+// Création du tableau des points du cube envoyé en paramètre à la fonction de test d'intersection AABB
+Point createPoint(GLdouble inx, GLdouble iny, GLdouble inz){
+	Point p;
+	p.x = &inx;
+	p.y = &iny;
+	p.z = &inz;
+	
+	return p;
 }
 
 Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
