@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#include <omp.h>
+
 #include "types.hpp"
 
 static const size_t GRID_3D_SIZE = 2;
@@ -352,7 +354,7 @@ int main(int argc, char** argv) {
 	}
 	
 	//VOXELS ARRAY CREATION	
-	uint32_t nbSub = 32; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	uint32_t nbSub = 16; // <----------------------------------------------------------------------///****************************** TO REPLACE
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
 	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 	

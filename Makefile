@@ -1,6 +1,6 @@
 CC = g++
-CFLAGS = -Wall -ansi -pedantic -I include -O2
-LDFLAGS = -lSDL -lGL -fopenMP
+CFLAGS = -Wall -ansi -pedantic -I include -O2 -fopenmp
+LDFLAGS = -lSDL -lGL -fopenmp
 
 SRC_VOXEL_PATH = src_make_voxel
 SRC_DISPLAY_PATH = src_display
