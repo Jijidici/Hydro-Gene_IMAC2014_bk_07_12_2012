@@ -146,6 +146,53 @@ GLdouble getmaxFace(Face testedFace, glm::vec3 axis){
 	return max;
 }
 
+GLdouble getmaxX(Face testedFace){
+	GLdouble maxX = *testedFace.s1->pos.x;
+	if(*testedFace.s2->pos.x > maxX) maxX = *testedFace.s2->pos.x;
+	if(*testedFace.s3->pos.x > maxX) maxX = *testedFace.s3->pos.x;
+	
+	return maxX;
+}
+
+GLdouble getminX(Face testedFace){
+	GLdouble minX = *testedFace.s1->pos.x;
+	if(*testedFace.s2->pos.x < minX) minX = *testedFace.s2->pos.x;
+	if(*testedFace.s3->pos.x < minX) minX = *testedFace.s3->pos.x;
+	
+	return minX;
+}
+
+GLdouble getmaxY(Face testedFace){
+	GLdouble maxY = *testedFace.s1->pos.y;
+	if(*testedFace.s2->pos.y > maxY) maxY = *testedFace.s2->pos.y;
+	if(*testedFace.s3->pos.y > maxY) maxY = *testedFace.s3->pos.y;
+	
+	return maxY;
+}
+
+GLdouble getminY(Face testedFace){
+	GLdouble minY = *testedFace.s1->pos.y;
+	if(*testedFace.s2->pos.y < minY) minY = *testedFace.s2->pos.y;
+	if(*testedFace.s3->pos.y < minY) minY = *testedFace.s3->pos.y;
+	
+	return minY;
+}
+
+GLdouble getmaxZ(Face testedFace){
+	GLdouble maxZ = *testedFace.s1->pos.z;
+	if(*testedFace.s2->pos.z > maxZ) maxZ = *testedFace.s2->pos.z;
+	if(*testedFace.s3->pos.z > maxZ) maxZ = *testedFace.s3->pos.z;
+	
+	return maxZ;
+}
+
+GLdouble getminZ(Face testedFace){
+	GLdouble minZ = *testedFace.s1->pos.z;
+	if(*testedFace.s2->pos.z < minZ) minZ = *testedFace.s2->pos.z;
+	if(*testedFace.s3->pos.z < minZ) minZ = *testedFace.s3->pos.z;
+	
+	return minZ;
+}
 
 
 /************************/
@@ -172,6 +219,16 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GL
 	// pas besoin de tester les cubes au dessus de l'altitude max, et en dessous de l'altitude min.
 	if(testedCube.bottom > altMax){ return false;}
 	if(testedCube.top < altMin){ return false;}
+	
+	// on teste les voxels par rapport aux sommets du triangle
+	if(testedCube.left > getmaxX(testedFace)){ return false;}
+	if(testedCube.right < getminX(testedFace)){ return false;}
+	
+	if(testedCube.far > getmaxZ(testedFace)){ return false;}
+	if(testedCube.near < getminZ(testedFace)){ return false;}
+	
+	if(testedCube.top < getmaxY(testedFace)){ return false;}
+	if(testedCube.bottom > getminY(testedFace)){ return false;}
 	
 	// selon les trois axes du repère
 	glm::vec3 xAxis(1.,0.,0.);
@@ -295,7 +352,7 @@ int main(int argc, char** argv) {
 	}
 	
 	//VOXELS ARRAY CREATION	
-	uint32_t nbSub = 8; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	uint32_t nbSub = 32; // <----------------------------------------------------------------------///****************************** TO REPLACE
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
 	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 	
