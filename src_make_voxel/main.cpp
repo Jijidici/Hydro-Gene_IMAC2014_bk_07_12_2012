@@ -353,8 +353,41 @@ int main(int argc, char** argv) {
 		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
 	}
 	
-	//VOXELS ARRAY CREATION	
-	uint32_t nbSub = 16; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	//VOXELS ARRAY CREATION
+	
+	//valeur par défaut
+	uint32_t nbSub = 0; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	
+	if(argc > 1){
+		nbSub = atoi(argv[1]);
+	}
+	
+	uint32_t test = nbSub;
+	uint32_t power = 0;
+	
+	while(test > 1){
+		test = test/2;
+		++power;
+	}
+	
+	uint32_t nbLow = pow(2,power);
+	uint32_t nbUp = pow(2,power+1);
+	
+	if(nbSub - nbLow < nbUp - nbSub){
+		nbSub = nbLow;
+	}else{
+		nbSub = nbUp;
+	}
+	
+	if(nbSub == 0){
+		nbSub = 16;
+		std::cout << "-> ! nbSub = 0, nbSub initialisé à 16" << std::endl;
+	}else{
+		std::cout << "-> Nombre de subdivisions arrondi à la puissance de 2 la plus proche" << std::endl;
+	}
+	
+	std::cout << "-> nbSub : " << nbSub << std::endl;
+	
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
 	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 	
