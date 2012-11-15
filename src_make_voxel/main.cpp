@@ -215,7 +215,6 @@ bool minmaxTest(glm::vec3 axis, Face testedFace, Cube testedCube){
 	return true;
 }
 
-
 // fonction principale de test de chevauchement des AABB
 bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GLdouble altMax){
 	// pas besoin de tester les cubes au dessus de l'altitude max, et en dessous de l'altitude min.
@@ -278,7 +277,6 @@ bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GL
 	if(!minmaxTest(crossProduct(edge3, zAxis), testedFace, testedCube)){  return false;}
 	
 	
-	
 	// si tous les tests passent sans pouvoir trouver un axe selon lequel les deux AABB sont clairement séparées, alors on peut dire selon le SAT que les deux éléments s'intersectent.
 	return true;
 }
@@ -297,7 +295,7 @@ int main(int argc, char** argv) {
 	FILE *dataFile = NULL;
 	dataFile = fopen("terrain_data/page_1.data", "rb");
 	if(NULL == dataFile){
-		std::cout << "[!] > Impossible to load the file dataFile" << std::endl;
+		std::cout << "[!] > Unable to load the file dataFile" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -354,7 +352,7 @@ int main(int argc, char** argv) {
 	}
 	
 	//VOXELS ARRAY CREATION	
-	uint32_t nbSub = 16; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	uint32_t nbSub = 64; // <----------------------------------------------------------------------///****************************** TO REPLACE
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
 	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
 	
