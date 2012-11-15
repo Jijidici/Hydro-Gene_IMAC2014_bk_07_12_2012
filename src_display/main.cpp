@@ -90,6 +90,7 @@ int main(int argc, char** argv){
 	}
 
 	uint32_t nbSubMax = 1;
+	
 	fread(&nbSubMax, sizeof(uint32_t), 1, voxelFile);
 
 	uint32_t lengthTabVoxel = nbSubMax*nbSubMax*nbSubMax;
@@ -97,10 +98,48 @@ int main(int argc, char** argv){
 	fread(tabVoxelMax, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
 	
 	uint32_t nbSub = nbSubMax;
+	uint32_t nbSubExpected = nbSub;
+	
+	
 	uint32_t* tabVoxel = new uint32_t[lengthTabVoxel];
 	for(uint32_t i = 0; i<lengthTabVoxel; ++i){
 		tabVoxel[i] = tabVoxelMax[i];
 	}
+	
+	if(argc > 1){
+		if(atoi(argv[1]) <= nbSubMax){
+			nbSubExpected = atoi(argv[1]);
+			
+			uint32_t test = nbSubExpected;
+			uint32_t power = 0;
+			
+			while(test > 1){
+				test = test/2;
+				++power;
+			}
+			
+			uint32_t nbLow = pow(2,power);
+			uint32_t nbUp = pow(2,power+1);
+			
+			if(nbSubExpected - nbLow < nbUp - nbSubExpected){
+				nbSubExpected = nbLow;
+			}else{
+				nbSubExpected = nbUp;
+			}
+			
+			if(nbSubExpected == 0){
+				nbSubExpected = nbSubMax;
+				std::cout << "-> ! nbSub = 0, nbSub initialisé à " << nbSubMax << std::endl;
+			}else{
+				std::cout << "-> Nombre de subdivisions arrondi à la puissance de 2 la plus proche" << std::endl;
+			}
+		}else{
+			std::cout << "précision demandée supérieure au nb de subdivs max" << std::endl;
+		}
+	}
+	
+	std::cout << "-> nbSub : " << nbSubExpected << std::endl;
+	
 	
 	fclose(voxelFile);
 	
@@ -111,7 +150,14 @@ int main(int argc, char** argv){
 		}
 	}
 	uint32_t constNbIntersectionMax = nbIntersectionMax;
-
+	
+	
+	while(nbSub > nbSubExpected){
+		nbSub /= 2;
+		nbIntersectionMax = increaseTab(nbSub, tabVoxel, nbSubMax, tabVoxelMax, constNbIntersectionMax);
+	}
+	
+	
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
 	/* ************************************************************* */

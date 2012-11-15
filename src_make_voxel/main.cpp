@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
 	//VOXELS ARRAY CREATION
 	
 	//valeur par défaut
-	uint32_t nbSub = 0; // <----------------------------------------------------------------------///****************************** TO REPLACE
+	uint32_t nbSub = 0;
 	
 	if(argc > 1){
 		nbSub = atoi(argv[1]);
