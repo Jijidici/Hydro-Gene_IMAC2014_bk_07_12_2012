@@ -20,23 +20,88 @@ static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
 static const size_t GRID_3D_SIZE = 2;
 
+uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
+
+	uint32_t nbIntersectionMax = 0;
+	
+	//addition des cases 2 à 2 par ligne
+	uint32_t index=0;
+	uint32_t newTab[4*nbSub*nbSub*nbSub];
+	for(uint32_t i=0;i<8*nbSub*nbSub*nbSub;i=i+2){
+		newTab[index] = tabVoxel[i]+tabVoxel[i+1];
+		index++;
+	}
+	//addition des cases 2 à 2 par colonne
+	uint32_t index2=0;
+	uint32_t tailleNewTab2 = 2*nbSub*nbSub*nbSub;
+	uint32_t newTab2[tailleNewTab2];
+	for(uint32_t j=0;j<4*nbSub*nbSub;j=j+2){
+		for(uint32_t i=j*nbSub;i<j*nbSub+nbSub;++i){
+			newTab2[index2] = newTab[i]+newTab[i+nbSub];
+			index2++;
+		}
+	}
+	//addition des cases 2 à 2 en profondeur	
+	uint32_t index3=0;
+	uint32_t tailleNewTab3 = nbSub*nbSub*nbSub;
+	uint32_t newTab3[tailleNewTab3];
+	for(uint32_t j=0;j<2*nbSub;j=j+2){
+		for(uint32_t i=j*nbSub*nbSub;i<j*nbSub*nbSub+nbSub*nbSub;++i){
+			newTab3[index3] = newTab2[i]+newTab2[i+nbSub*nbSub];
+			index3++;
+		}
+	}
+	//on change tabVoxel
+	for(uint32_t i=0;i<nbSub*nbSub*nbSub;++i){
+		tabVoxel[i] = newTab3[i];
+		if(tabVoxel[i] > nbIntersectionMax) nbIntersectionMax = tabVoxel[i];
+	}
+	for(uint32_t i=nbSub*nbSub*nbSub; i<8*nbSub*nbSub*nbSub; ++i){
+		tabVoxel[i] = 0;
+	}
+	return nbIntersectionMax;
+}
+
+uint32_t increaseTab(uint32_t nbSub, uint32_t *tabVoxel, uint32_t nbSubMax, uint32_t *tabVoxelMax, uint32_t constNbIntersectionMax){
+	
+	uint32_t nbIntersectionMax = constNbIntersectionMax;
+	
+	for(uint32_t i=0;i<nbSubMax*nbSubMax*nbSubMax;++i){
+		tabVoxel[i] = tabVoxelMax[i];
+	}
+	
+	if(nbSub != nbSubMax){
+		while(nbSubMax>nbSub){
+			nbSubMax /= 2;
+			nbIntersectionMax = reduceTab(nbSubMax,tabVoxel);
+		}
+	}
+	return nbIntersectionMax;
+}
+
 int main(int argc, char** argv){
 	
 	// OPEN AND READ THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
 	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "rb");
 	if(NULL == voxelFile){
-		std::cout << "[!] > Impossible to load the file voxelFile" << std::endl;
+		std::cout << "[!] > Unable to load the file voxelFile" << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	uint32_t nbSub = 1;
-	fread(&nbSub, sizeof(uint32_t), 1, voxelFile);
+	uint32_t nbSubMax = 1;
+	fread(&nbSubMax, sizeof(uint32_t), 1, voxelFile);
 
-	uint32_t lengthTabVoxel = nbSub*nbSub*nbSub;
+	uint32_t lengthTabVoxel = nbSubMax*nbSubMax*nbSubMax;
+	uint32_t* tabVoxelMax = new uint32_t[lengthTabVoxel];
+	fread(tabVoxelMax, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
+	
+	uint32_t nbSub = nbSubMax;
 	uint32_t* tabVoxel = new uint32_t[lengthTabVoxel];
-	fread(tabVoxel, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
-
+	for(uint32_t i = 0; i<lengthTabVoxel; ++i){
+		tabVoxel[i] = tabVoxelMax[i];
+	}
+	
 	fclose(voxelFile);
 	
 	uint32_t nbIntersectionMax = 0;
@@ -45,6 +110,7 @@ int main(int argc, char** argv){
 			nbIntersectionMax = tabVoxel[i];
 		}
 	}
+	uint32_t constNbIntersectionMax = nbIntersectionMax;
 
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
@@ -181,6 +247,8 @@ int main(int argc, char** argv){
 	uint8_t isLeftClicPressed = 0;
 	uint16_t savedClicX = -1;
 	uint16_t savedClicY = -1;
+	bool changeNbSubPlus = false;
+	bool changeNbSubMinus = false;
 		
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
@@ -195,6 +263,18 @@ int main(int argc, char** argv){
 
 		// Nettoyage de la fenêtre
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				
+		if(changeNbSubPlus){ //si on a appuyé sur +
+			std::cout << " > Nombre de subdivisions : " << nbSub << std::endl;
+			nbIntersectionMax = increaseTab(nbSub,tabVoxel,nbSubMax,tabVoxelMax, constNbIntersectionMax);
+			changeNbSubPlus = false;
+		}
+		
+		if(changeNbSubMinus){ //si on a appuyé sur -
+			std::cout << " > Nombre de subdivisions : " << nbSub << std::endl;
+			nbIntersectionMax = reduceTab(nbSub,tabVoxel);
+			changeNbSubMinus = false;
+		}
 			
 		double cubeSize = GRID_3D_SIZE/(double)nbSub;
 
@@ -258,9 +338,17 @@ int main(int argc, char** argv){
 						break;
 						
 						case SDLK_KP_PLUS:
+							if(nbSub != nbSubMax){
+								nbSub *= 2;
+								changeNbSubPlus = true;
+							}else std::cout << "Nombre de subdivisions maximum atteint." << std::endl;						
 						break;
 						
 						case SDLK_KP_MINUS:
+							if(nbSub != 1){
+								nbSub /= 2;
+								changeNbSubMinus = true;
+							}else std::cout << "Nombre de subdivisions minimum atteint." << std::endl;						
 						break;
 						
 						case SDLK_SPACE:
@@ -368,6 +456,7 @@ int main(int argc, char** argv){
 	glDeleteVertexArrays(1, &cubeVAO);
 	
 	delete[] tabVoxel;
+	delete[] tabVoxelMax;
 	
 	return (EXIT_SUCCESS);
 }
