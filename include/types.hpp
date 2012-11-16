@@ -1,12 +1,10 @@
 #ifndef __TYPE_HPP__
 #define __TYPE_HPP__
 
-#include <GL/glew.h>
-
 typedef struct s_point{
-	GLdouble * x;
-	GLdouble * y;
-	GLdouble * z;
+	double x;
+	double y;
+	double z;
 }Point;
 
 typedef struct s_vertex{
@@ -18,12 +16,12 @@ typedef struct s_face{
 }Face;
 
 typedef struct s_cube{
-	GLdouble left;
-	GLdouble right;
-	GLdouble top;
-	GLdouble bottom;
-	GLdouble far;
-	GLdouble near;
+	double left;
+	double right;
+	double top;
+	double bottom;
+	double far;
+	double near;
 	uint8_t nbVertices;
 }Cube;
 
@@ -31,7 +29,7 @@ typedef struct s_cube{
 /*          FUNCTIONS                     */
 /******************************************/
 
-Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBottom, GLdouble inFar, GLdouble inNear){
+Cube createCube(double inLeft, double inRight, double inTop, double inBottom, double inFar, double inNear){
 	Cube newCube;
 	newCube.left = inLeft;
 	newCube.right = inRight;
@@ -45,11 +43,11 @@ Cube createCube(GLdouble inLeft, GLdouble inRight, GLdouble inTop, GLdouble inBo
 }
 
 // Création du tableau des points du cube envoyé en paramètre à la fonction de test d'intersection AABB
-Point createPoint(GLdouble inx, GLdouble iny, GLdouble inz){
+Point createPoint(double inx, double iny, double inz){
 	Point p;
-	p.x = &inx;
-	p.y = &iny;
-	p.z = &inz;
+	p.x = inx;
+	p.y = iny;
+	p.z = inz;
 	
 	return p;
 }

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -ansi -pedantic -I include -O2 -fopenmp
+CFLAGS = -Wall -ansi -pedantic -I include -O2 -g -fopenmp
 LDFLAGS = -lSDL -lGL -fopenmp
 
 SRC_VOXEL_PATH = src_make_voxel
@@ -17,14 +17,11 @@ OBJ_DISPLAY_FILES = $(patsubst $(SRC_DISPLAY_PATH)/%.cpp, $(SRC_DISPLAY_PATH)/%.
 
 all: $(BIN_PATH)/$(EXEC_VOXEL) $(BIN_PATH)/$(EXEC_DISPLAY)
 
-$(BIN_PATH)/$(EXEC_VOXEL): $(OBJ_VOXEL_FILES) $(SRC_VOXEL_PATH)/glew-1.9/glew.o
+$(BIN_PATH)/$(EXEC_VOXEL): $(OBJ_VOXEL_FILES) 
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(BIN_PATH)/$(EXEC_DISPLAY): $(OBJ_DISPLAY_FILES) $(SRC_DISPLAY_PATH)/glew-1.9/glew.o
 	$(CC) -o $@ $^ $(LDFLAGS)
-
-$(SRC_VOXEL_PATH)/glew-1.9/glew.o: $(SRC_VOXEL_PATH)/glew-1.9/glew.c
-	$(CC) -c -o $@ $(CFLAGS) $^ 
 
 $(SRC_DISPLAY_PATH)/glew-1.9/glew.o: $(SRC_DISPLAY_PATH)/glew-1.9/glew.c
 	$(CC) -c -o $@ $(CFLAGS) $^ 

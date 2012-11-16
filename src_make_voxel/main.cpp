@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cmath>
 
-#include <GL/glew.h>
-
 #include <glm/glm.hpp>
 
 #include <stdint.h>
@@ -30,18 +28,13 @@ glm::vec3 crossProduct(glm::vec3 v1, glm::vec3 v2){
 }
 
 // produit scalaire vecteur*vecteur
-GLdouble dotProduct(glm::vec3 v1, glm::vec3 v2){
+double dotProduct(glm::vec3 v1, glm::vec3 v2){
 	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
 }
 
 // produit scalaire point*vecteur
-GLdouble dotProduct(Point p1, glm::vec3 v2){
-	//std::cout << "x : " << *p1.x << " y : " << *p1.y << " z : " << *p1.z <<  std::endl;
-	
-	GLdouble p1X = *(p1.x); GLdouble p1Y = *(p1.y); GLdouble p1Z = *(p1.z);
-	GLdouble v2X = v2.x; GLdouble v2Y = v2.y; GLdouble v2Z = v2.z;
-	
-	return (p1X*v2X + p1Y*v2Y + p1Z*v2Z);
+double dotProduct(Point p, glm::vec3 v){	
+	return (p.x*v.x + p.y*v.y + p.z*v.z);
 }
 
 // création d'un vecteur à partir de 2 points
@@ -59,10 +52,10 @@ glm::vec3 vecSub(Point p1, Point p2){
 // Evaluation des distances des points de l'élément aux axes
 // pour les boxes
 // minimum
-GLdouble getminCube(Cube testedCube, glm::vec3 axis){
-	GLdouble min = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
+double getminCube(Cube testedCube, glm::vec3 axis){
+	double min = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
 	
-	GLdouble dotprod = 0;
+	double dotprod = 0;
 	
 	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.near)	, axis);
 	if(dotprod < min) min = dotprod;
@@ -89,10 +82,10 @@ GLdouble getminCube(Cube testedCube, glm::vec3 axis){
 	return min;
 }
 // maximum
-GLdouble getmaxCube(Cube testedCube, glm::vec3 axis){
-	GLdouble max = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
+double getmaxCube(Cube testedCube, glm::vec3 axis){
+	double max = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
 	
-	GLdouble dotprod = 0;
+	double dotprod = 0;
 	
 	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.near)	, axis);
 	if(dotprod > max) max = dotprod;
@@ -121,9 +114,9 @@ GLdouble getmaxCube(Cube testedCube, glm::vec3 axis){
 
 // pour les triangles
 // minimum
-GLdouble getminFace(Face testedFace, glm::vec3 axis){
-	GLdouble min = dotProduct(testedFace.s1->pos, axis);
-	GLdouble dotprod = 0;
+double getminFace(Face testedFace, glm::vec3 axis){
+	double min = dotProduct(testedFace.s1->pos, axis);
+	double dotprod = 0;
 	
 	dotprod = dotProduct(testedFace.s2->pos, axis);
 	if(dotprod < min) min = dotprod;
@@ -135,9 +128,9 @@ GLdouble getminFace(Face testedFace, glm::vec3 axis){
 	return min;
 }
 // maximum
-GLdouble getmaxFace(Face testedFace, glm::vec3 axis){
-	GLdouble max = dotProduct(testedFace.s1->pos, axis);
-	GLdouble dotprod = 0;
+double getmaxFace(Face testedFace, glm::vec3 axis){
+	double max = dotProduct(testedFace.s1->pos, axis);
+	double dotprod = 0;
 	
 	dotprod = dotProduct(testedFace.s2->pos, axis);
 	if(dotprod > max) max = dotprod;
@@ -148,50 +141,50 @@ GLdouble getmaxFace(Face testedFace, glm::vec3 axis){
 	return max;
 }
 
-GLdouble getmaxX(Face testedFace){
-	GLdouble maxX = *testedFace.s1->pos.x;
-	if(*testedFace.s2->pos.x > maxX) maxX = *testedFace.s2->pos.x;
-	if(*testedFace.s3->pos.x > maxX) maxX = *testedFace.s3->pos.x;
+double getmaxX(Face testedFace){
+	double maxX = testedFace.s1->pos.x;
+	if(testedFace.s2->pos.x > maxX) maxX = testedFace.s2->pos.x;
+	if(testedFace.s3->pos.x > maxX) maxX = testedFace.s3->pos.x;
 	
 	return maxX;
 }
 
-GLdouble getminX(Face testedFace){
-	GLdouble minX = *testedFace.s1->pos.x;
-	if(*testedFace.s2->pos.x < minX) minX = *testedFace.s2->pos.x;
-	if(*testedFace.s3->pos.x < minX) minX = *testedFace.s3->pos.x;
+double getminX(Face testedFace){
+	double minX = testedFace.s1->pos.x;
+	if(testedFace.s2->pos.x < minX) minX = testedFace.s2->pos.x;
+	if(testedFace.s3->pos.x < minX) minX = testedFace.s3->pos.x;
 	
 	return minX;
 }
 
-GLdouble getmaxY(Face testedFace){
-	GLdouble maxY = *testedFace.s1->pos.y;
-	if(*testedFace.s2->pos.y > maxY) maxY = *testedFace.s2->pos.y;
-	if(*testedFace.s3->pos.y > maxY) maxY = *testedFace.s3->pos.y;
+double getmaxY(Face testedFace){
+	double maxY = testedFace.s1->pos.y;
+	if(testedFace.s2->pos.y > maxY) maxY = testedFace.s2->pos.y;
+	if(testedFace.s3->pos.y > maxY) maxY = testedFace.s3->pos.y;
 	
 	return maxY;
 }
 
-GLdouble getminY(Face testedFace){
-	GLdouble minY = *testedFace.s1->pos.y;
-	if(*testedFace.s2->pos.y < minY) minY = *testedFace.s2->pos.y;
-	if(*testedFace.s3->pos.y < minY) minY = *testedFace.s3->pos.y;
+double getminY(Face testedFace){
+	double minY = testedFace.s1->pos.y;
+	if(testedFace.s2->pos.y < minY) minY = testedFace.s2->pos.y;
+	if(testedFace.s3->pos.y < minY) minY = testedFace.s3->pos.y;
 	
 	return minY;
 }
 
-GLdouble getmaxZ(Face testedFace){
-	GLdouble maxZ = *testedFace.s1->pos.z;
-	if(*testedFace.s2->pos.z > maxZ) maxZ = *testedFace.s2->pos.z;
-	if(*testedFace.s3->pos.z > maxZ) maxZ = *testedFace.s3->pos.z;
+double getmaxZ(Face testedFace){
+	double maxZ = testedFace.s1->pos.z;
+	if(testedFace.s2->pos.z > maxZ) maxZ = testedFace.s2->pos.z;
+	if(testedFace.s3->pos.z > maxZ) maxZ = testedFace.s3->pos.z;
 	
 	return maxZ;
 }
 
-GLdouble getminZ(Face testedFace){
-	GLdouble minZ = *testedFace.s1->pos.z;
-	if(*testedFace.s2->pos.z < minZ) minZ = *testedFace.s2->pos.z;
-	if(*testedFace.s3->pos.z < minZ) minZ = *testedFace.s3->pos.z;
+double getminZ(Face testedFace){
+	double minZ = testedFace.s1->pos.z;
+	if(testedFace.s2->pos.z < minZ) minZ = testedFace.s2->pos.z;
+	if(testedFace.s3->pos.z < minZ) minZ = testedFace.s3->pos.z;
 	
 	return minZ;
 }
@@ -216,7 +209,7 @@ bool minmaxTest(glm::vec3 axis, Face testedFace, Cube testedCube){
 }
 
 // fonction principale de test de chevauchement des AABB
-bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, GLdouble altMin, GLdouble altMax){
+bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, double altMin, double altMax){
 	// pas besoin de tester les cubes au dessus de l'altitude max, et en dessous de l'altitude min.
 	if(testedCube.bottom > altMax){ return false;}
 	if(testedCube.top < altMin){ return false;}
@@ -308,11 +301,11 @@ int main(int argc, char** argv) {
 	
 	
 	// altitudes min et max de la carte
-	GLdouble altMin = 0.0;
-	GLdouble altMax = 0.015;
+	double altMin = 0.0;
+	double altMax = 0.015;
 	
-	GLdouble * positionsData = new GLdouble[3*nbVertice];
-	fread(positionsData, sizeof(GLdouble), 3*nbVertice, dataFile); // to read the positions of the vertices
+	double * positionsData = new double[3*nbVertice];
+	fread(positionsData, sizeof(double), 3*nbVertice, dataFile); // to read the positions of the vertices
 	
 	uint32_t * facesData = new uint32_t[3*nbFace];
 	fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
@@ -322,16 +315,16 @@ int main(int argc, char** argv) {
 	Vertex * tabV = new Vertex[nbVertice];
 	
 	for(uint32_t n=0;n<nbVertice;++n){ // to create the vertices tab
-		tabV[n].pos.x = &positionsData[3*n];
-		tabV[n].pos.z = &positionsData[3*n+1];
-		tabV[n].pos.y = &positionsData[3*n+2];
+		tabV[n].pos.x = positionsData[3*n];
+		tabV[n].pos.z = positionsData[3*n+1];
+		tabV[n].pos.y = positionsData[3*n+2];
 		
 		// on récupère les altitudes extremes
-		if(*(tabV[n].pos.y) > altMax){
-			altMax = *(tabV[n].pos.y);
+		if(tabV[n].pos.y > altMax){
+			altMax = tabV[n].pos.y;
 		}else{
-			if(*(tabV[n].pos.y) < altMin){
-				altMin = *(tabV[n].pos.y);
+			if(tabV[n].pos.y < altMin){
+				altMin = tabV[n].pos.y;
 			}
 		}
 	}
@@ -418,6 +411,50 @@ int main(int argc, char** argv) {
 			}
 		} 
 	}
+
+
+int zEquality = 0;
+int zmaxSup = 0;
+int zminSup = 0;
+
+ //#pragma omp parallel for
+    /*for(uint32_t n=0;n<nbFace;++n){
+       /* Attention conditions inexactes à retoucher */
+      /*  int maxX = (getmaxX(tabF[n]) + 1.) / cubeSize;
+        int minX = (getminX(tabF[n]) + 1.) / cubeSize;
+        int maxZ = (getmaxZ(tabF[n]) + 1.) / cubeSize;
+        int minZ = (getminZ(tabF[n]) + 1.) / cubeSize;
+        int maxY = (getmaxY(tabF[n]) + 1.) / cubeSize ;
+        int minY = (getminY(tabF[n]) + 1.) / cubeSize ;
+   		
+        if(maxX>minX){
+        	zmaxSup++;
+        }else{
+        	if(maxX == minX){
+        		zEquality++;
+        	}else{
+        		zminSup++;
+        	}        	
+        }
+
+        for(uint16_t k=minZ;k<=maxZ+1;++k){
+            for(uint16_t j=minY;j<maxY+1;++j){
+                for(uint16_t i=minX;i<maxX+1;++i){
+                    uint32_t currentVoxel = i + nbSub*j + nbSub*nbSub*k;
+                    double posX =  i*cubeSize -1;
+                    double posY = -j*cubeSize +1;
+                    double posZ = -k*cubeSize +1;
+                    Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
+                        if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
+                            tabVoxel[currentVoxel] += 1;
+                        }
+                }
+            }
+        }
+    }*/
+
+    std::cout<<"NB max == min ["<<zEquality<<"] || --- || NB max > min ["<<zmaxSup<<"] || --- || NB max < min ["<<zminSup<<"]"<<std::endl;
+    std::cout<<"SOMME = "<<zEquality+zmaxSup+zminSup<<std::endl;
 	
 	//WRITTING THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
