@@ -107,7 +107,7 @@ int main(int argc, char** argv){
 	}
 	
 	if(argc > 1){
-		if(atoi(argv[1]) <= nbSubMax){
+		if(atoi(argv[1]) <= (int) nbSubMax){
 			nbSubExpected = atoi(argv[1]);
 			
 			uint32_t test = nbSubExpected;
@@ -142,7 +142,7 @@ int main(int argc, char** argv){
 	
 	
 	fclose(voxelFile);
-	
+
 	uint32_t nbIntersectionMax = 0;
 	for(uint32_t i=0; i<lengthTabVoxel;++i){
 		if(tabVoxel[i]>nbIntersectionMax){
@@ -255,7 +255,7 @@ int main(int argc, char** argv){
 			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	
+
 	// Creation des Shaders
 	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
 	if(!program){
@@ -335,7 +335,7 @@ int main(int argc, char** argv){
 				for(uint32_t i=0;i<nbSub;++i){
 					uint32_t currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
 					if(currentNbIntersection != 0){
-						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, -(j*cubeSize-(GRID_3D_SIZE-cubeSize)/2), -(k*cubeSize-(GRID_3D_SIZE-cubeSize)/2))); //PLACEMENT OF EACH GRID CUBE
+						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, j*cubeSize-(GRID_3D_SIZE-cubeSize)/2, k*cubeSize-(GRID_3D_SIZE-cubeSize)/2)); //PLACEMENT OF EACH GRID CUBE
 						aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
 						glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(aCubeMVP));
 					
@@ -347,8 +347,7 @@ int main(int argc, char** argv){
 					}
 				}
 			}
-		}
-		
+		}	
 		
 		// Mise à jour de l'affichage
 		SDL_GL_SwapBuffers();

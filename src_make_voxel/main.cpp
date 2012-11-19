@@ -301,8 +301,8 @@ int main(int argc, char** argv) {
 	
 	
 	// altitudes min et max de la carte
-	double altMin = 0.0;
-	double altMax = 0.015;
+	double altMin = 0;
+	double altMax = 0;
 	
 	double * positionsData = new double[3*nbVertice];
 	fread(positionsData, sizeof(double), 3*nbVertice, dataFile); // to read the positions of the vertices
@@ -330,6 +330,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << std::endl;
+	
 	
 	Face * tabF = new Face[nbFace];
 	uint32_t vertexCoordsOffset[3];
@@ -392,8 +393,7 @@ int main(int argc, char** argv) {
 	//INTERSECTION PROCESSING
 	
 	//For each cube
-	#pragma omp parallel for
-	for(uint16_t k=0;k<nbSub;++k){
+	/*for(uint16_t k=0;k<nbSub;++k){
 		for(uint16_t j=0;j<nbSub;++j){
 			for(uint16_t i=0;i<nbSub;++i){
 				uint32_t currentVoxel = i + nbSub*j + nbSub*nbSub*k;
@@ -409,52 +409,48 @@ int main(int argc, char** argv) {
 					}
 				}
 			}
-		} 
+		}
+	}*/
+	//For each Face
+	//#pragma omp parallel for
+	for(uint32_t n=0; n<nbFace;++n){
+		uint32_t minVoxelX =  (getminX(tabF[n]) - cubeSize + 1.)/cubeSize;
+		uint32_t maxVoxelX =  (getmaxX(tabF[n]) + cubeSize + 1.)/cubeSize;
+		uint32_t minVoxelY =  (getminY(tabF[n]) - cubeSize + 1.)/cubeSize;
+		uint32_t maxVoxelY =  (getmaxY(tabF[n]) + cubeSize + 1.)/cubeSize;
+		uint32_t minVoxelZ =  (getminZ(tabF[n]) - cubeSize + 1.)/cubeSize;
+		uint32_t maxVoxelZ =  (getmaxZ(tabF[n]) + cubeSize + 1.)/cubeSize;
+		/*std::cout<<"]> pos min X "<<getminX(tabF[n])<<std::endl;
+		std::cout<<"]> pos max X "<<getmaxX(tabF[n])<<std::endl;
+		std::cout<<"]> pos min Y "<<getminY(tabF[n])<<std::endl;
+		std::cout<<"]> pos max Y "<<getmaxY(tabF[n])<<std::endl;
+		std::cout<<"]> pos min Z "<<getminZ(tabF[n])<<std::endl;
+		std::cout<<"]> pos max Z "<<getmaxZ(tabF[n])<<std::endl;
+		
+		std::cout<<"]]> Cube size "<<cubeSize<<std::endl;
+		std::cout<<n<<"]> Case min X "<<minVoxelX<<std::endl;
+		std::cout<<n<<"]> Case max X "<<maxVoxelX<<std::endl;
+		std::cout<<n<<"]> Case min Y "<<minVoxelY<<std::endl;
+		std::cout<<n<<"]> Case max Y "<<maxVoxelY<<std::endl;
+		std::cout<<n<<"]> Case min Z "<<minVoxelZ<<std::endl;
+		std::cout<<n<<"]> Case max Z "<<maxVoxelZ<<std::endl;
+		tabVoxel[minVoxelZ*nbSub*nbSub + nbSub*minVoxelY + minVoxelX]+=5;
+		tabVoxel[maxVoxelZ*nbSub*nbSub + nbSub*maxVoxelY + maxVoxelX]+=10;*/
+
+		for(uint32_t k=minVoxelZ; k<=maxVoxelZ; ++k){
+			for(uint32_t j=minVoxelY;j<=maxVoxelY; ++j){
+				for(uint32_t i=minVoxelX;i<=maxVoxelX;++i){
+					double posX =  i*cubeSize -1;
+					double posY =  j*cubeSize -1;
+					double posZ =  k*cubeSize -1;
+					Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
+					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
+						tabVoxel[i + nbSub*j + nbSub*nbSub*k]++;
+					}
+				}
+			}
+		}
 	}
-
-
-int zEquality = 0;
-int zmaxSup = 0;
-int zminSup = 0;
-
- //#pragma omp parallel for
-    /*for(uint32_t n=0;n<nbFace;++n){
-       /* Attention conditions inexactes à retoucher */
-      /*  int maxX = (getmaxX(tabF[n]) + 1.) / cubeSize;
-        int minX = (getminX(tabF[n]) + 1.) / cubeSize;
-        int maxZ = (getmaxZ(tabF[n]) + 1.) / cubeSize;
-        int minZ = (getminZ(tabF[n]) + 1.) / cubeSize;
-        int maxY = (getmaxY(tabF[n]) + 1.) / cubeSize ;
-        int minY = (getminY(tabF[n]) + 1.) / cubeSize ;
-   		
-        if(maxX>minX){
-        	zmaxSup++;
-        }else{
-        	if(maxX == minX){
-        		zEquality++;
-        	}else{
-        		zminSup++;
-        	}        	
-        }
-
-        for(uint16_t k=minZ;k<=maxZ+1;++k){
-            for(uint16_t j=minY;j<maxY+1;++j){
-                for(uint16_t i=minX;i<maxX+1;++i){
-                    uint32_t currentVoxel = i + nbSub*j + nbSub*nbSub*k;
-                    double posX =  i*cubeSize -1;
-                    double posY = -j*cubeSize +1;
-                    double posZ = -k*cubeSize +1;
-                    Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
-                        if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
-                            tabVoxel[currentVoxel] += 1;
-                        }
-                }
-            }
-        }
-    }*/
-
-    std::cout<<"NB max == min ["<<zEquality<<"] || --- || NB max > min ["<<zmaxSup<<"] || --- || NB max < min ["<<zminSup<<"]"<<std::endl;
-    std::cout<<"SOMME = "<<zEquality+zmaxSup+zminSup<<std::endl;
 	
 	//WRITTING THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
