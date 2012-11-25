@@ -1,14 +1,10 @@
 #ifndef __TYPE_HPP__
 #define __TYPE_HPP__
 
-typedef struct s_point{
-	double x;
-	double y;
-	double z;
-}Point;
+#include <glm/glm.hpp>
 
 typedef struct s_vertex{
-	Point pos;
+	glm::dvec3 pos;
 }Vertex;
 
 typedef struct s_face{
@@ -25,9 +21,23 @@ typedef struct s_cube{
 	uint8_t nbVertices;
 }Cube;
 
+typedef struct s_voxel{
+	glm::dvec3 c;
+	double size;
+}Voxel;
+
 /******************************************/
 /*          FUNCTIONS                     */
 /******************************************/
+
+Voxel createVoxel(double inX, double inY, double inZ, double inSize){
+	Voxel newVoxel;
+	newVoxel.c.x = inX;
+	newVoxel.c.y = inY;
+	newVoxel.c.z = inZ;
+	newVoxel.size = inSize;
+	return newVoxel;
+}
 
 Cube createCube(double inLeft, double inRight, double inTop, double inBottom, double inFar, double inNear){
 	Cube newCube;
@@ -40,25 +50,6 @@ Cube createCube(double inLeft, double inRight, double inTop, double inBottom, do
 	newCube.nbVertices = 36;
 	
 	return newCube;
-}
-
-// Création du tableau des points du cube envoyé en paramètre à la fonction de test d'intersection AABB
-Point createPoint(double inx, double iny, double inz){
-	Point p;
-	p.x = inx;
-	p.y = iny;
-	p.z = inz;
-	
-	return p;
-}
-
-Face createFace(Vertex* inS1, Vertex* inS2, Vertex* inS3){
-	Face newFace;
-	newFace.s1 = inS1;
-	newFace.s2 = inS2;
-	newFace.s3 = inS3;
-	
-	return newFace;
 }
 
 #endif

@@ -83,6 +83,7 @@ int main(int argc, char** argv){
 	
 	// OPEN AND READ THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
+	size_t test_fic = 0;
 	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "rb");
 	if(NULL == voxelFile){
 		std::cout << "[!] > Unable to load the file voxelFile" << std::endl;
@@ -91,11 +92,11 @@ int main(int argc, char** argv){
 
 	uint32_t nbSubMax = 1;
 	
-	fread(&nbSubMax, sizeof(uint32_t), 1, voxelFile);
+	test_fic = fread(&nbSubMax, sizeof(uint32_t), 1, voxelFile);
 
 	uint32_t lengthTabVoxel = nbSubMax*nbSubMax*nbSubMax;
 	uint32_t* tabVoxelMax = new uint32_t[lengthTabVoxel];
-	fread(tabVoxelMax, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
+	test_fic = fread(tabVoxelMax, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
 	
 	uint32_t nbSub = nbSubMax;
 	uint32_t nbSubExpected = nbSub;

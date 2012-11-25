@@ -16,130 +16,7 @@ static const size_t GRID_3D_SIZE = 2;
 /*          FUNCTIONS                     */
 /******************************************/
 
-/** OPERATIONS **/
-// produit vectoriel
-glm::vec3 crossProduct(glm::vec3 v1, glm::vec3 v2){
-	glm::vec3 result;
-	result.x = v1.y*v2.z - v1.z*v2.y;
-	result.y = v1.z*v2.x - v1.x*v2.z;
-	result.z = v1.x*v2.y - v1.y*v2.x;
-	
-	return result;
-}
-
-// produit scalaire vecteur*vecteur
-double dotProduct(glm::vec3 v1, glm::vec3 v2){
-	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-}
-
-// produit scalaire point*vecteur
-double dotProduct(Point p, glm::vec3 v){	
-	return (p.x*v.x + p.y*v.y + p.z*v.z);
-}
-
-// création d'un vecteur à partir de 2 points
-glm::vec3 vecSub(Point p1, Point p2){
-	glm::vec3 result;
-	result.x = p1.x - p2.x;
-	result.y = p1.y - p2.y;
-	result.z = p1.z - p2.z;
-	
-	return result;
-}
-
-/** MIN/MAX **/
-
-// Evaluation des distances des points de l'élément aux axes
-// pour les boxes
-// minimum
-double getminCube(Cube testedCube, glm::vec3 axis){
-	double min = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
-	
-	double dotprod = 0;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.near)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.bottom, testedCube.near)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.bottom, testedCube.near)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.far)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.far)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.bottom, testedCube.far)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.bottom, testedCube.far)	, axis);
-	if(dotprod < min) min = dotprod;
-	
-	
-	return min;
-}
-// maximum
-double getmaxCube(Cube testedCube, glm::vec3 axis){
-	double max = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.near), axis);
-	
-	double dotprod = 0;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.near)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.bottom, testedCube.near)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.bottom, testedCube.near)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.top, testedCube.far)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.top, testedCube.far)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.right, testedCube.bottom, testedCube.far)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	dotprod = dotProduct(	createPoint(testedCube.left, testedCube.bottom, testedCube.far)	, axis);
-	if(dotprod > max) max = dotprod;
-	
-	
-	return max;
-}
-
-// pour les triangles
-// minimum
-double getminFace(Face testedFace, glm::vec3 axis){
-	double min = dotProduct(testedFace.s1->pos, axis);
-	double dotprod = 0;
-	
-	dotprod = dotProduct(testedFace.s2->pos, axis);
-	if(dotprod < min) min = dotprod;
-	
-	dotprod = dotProduct(testedFace.s3->pos, axis);
-	if(dotprod < min) min = dotprod;
-	
-	
-	return min;
-}
-// maximum
-double getmaxFace(Face testedFace, glm::vec3 axis){
-	double max = dotProduct(testedFace.s1->pos, axis);
-	double dotprod = 0;
-	
-	dotprod = dotProduct(testedFace.s2->pos, axis);
-	if(dotprod > max) max = dotprod;
-
-	dotprod = dotProduct(testedFace.s3->pos, axis);
-	if(dotprod > max) max = dotprod;
-
-	return max;
-}
+/** MIN/MAX of a Face**/
 
 double getmaxX(Face testedFace){
 	double maxX = testedFace.s1->pos.x;
@@ -193,84 +70,9 @@ double getminZ(Face testedFace){
 /************************/
 /******INTERSECTION******/
 /************************/
-// fonction d'intersection selon un axe
-// on passe en paramètre : les points du cube, les points du triangle, l'axe considéré
-bool minmaxTest(glm::vec3 axis, Face testedFace, Cube testedCube){
-	// si le point du cube le plus proche de l'axe est plus éloigné que le point du triangle le plus loin de l'axe, pas de chevauchement des AABB selon cet axe. (oui, c'est tordu !)
-	if(getminCube(testedCube, axis) > getmaxFace(testedFace, axis)){
-		return false;
-	}
-	// inversement : si le point du cube le plus loin de l'axe est plus proche que le point du triangle le plus proche de l'axe, pas de chevauchement des AABB selon cet axe.
-	if(getmaxCube(testedCube, axis) < getminFace(testedFace, axis)){
-		return false;
-	}
-	// sinon : chevauchement des AABB, et on passe au test suivant.
-	return true;
-}
 
-// fonction principale de test de chevauchement des AABB
-bool aabbTriboxOverlapTest(Cube testedCube, Face testedFace, double altMin, double altMax){
-	// pas besoin de tester les cubes au dessus de l'altitude max, et en dessous de l'altitude min.
-	if(testedCube.bottom > altMax){ return false;}
-	if(testedCube.top < altMin){ return false;}
-	
-	// on teste les voxels par rapport aux sommets du triangle
-	if(testedCube.left > getmaxX(testedFace)){ return false;}
-	if(testedCube.right < getminX(testedFace)){ return false;}
-	
-	if(testedCube.far > getmaxZ(testedFace)){ return false;}
-	if(testedCube.near < getminZ(testedFace)){ return false;}
-	
-	if(testedCube.top < getmaxY(testedFace)){ return false;}
-	if(testedCube.bottom > getminY(testedFace)){ return false;}
-	
-	// selon les trois axes du repère
-	glm::vec3 xAxis(1.,0.,0.);
-	if(!minmaxTest(xAxis, testedFace, testedCube)){
-		
-		return false;
-	}
-	
-	glm::vec3 yAxis(0.,1.,0.);
-	if(!minmaxTest(yAxis, testedFace, testedCube)){
-		
-		return false;
-	}
-	
-	glm::vec3 zAxis(0.,0.,1.);
-	if(!minmaxTest(zAxis, testedFace, testedCube)){
-		
-		return false;
-	}
-	
-	// edges du triangle :
-	glm::vec3 edge1 = vecSub(testedFace.s2->pos, testedFace.s1->pos);
-	glm::vec3 edge2 = vecSub(testedFace.s3->pos, testedFace.s2->pos);
-	glm::vec3 edge3 = vecSub(testedFace.s1->pos, testedFace.s3->pos);
-	
-	glm::vec3 normal = crossProduct(edge1, edge2);
-	
-	// selon la normale au triangle
-	if(!minmaxTest(normal, testedFace, testedCube)){
-		
-		return false;
-	}
-	
-	// selon les 9 produits vectoriels (directions du cube)^(edges du triangle)
-	if(!minmaxTest(crossProduct(edge1, xAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge1, yAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge1, zAxis), testedFace, testedCube)){  return false;}
-	
-	if(!minmaxTest(crossProduct(edge2, xAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge2, yAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge2, zAxis), testedFace, testedCube)){  return false;}
-	
-	if(!minmaxTest(crossProduct(edge1, xAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge2, yAxis), testedFace, testedCube)){  return false;}
-	if(!minmaxTest(crossProduct(edge3, zAxis), testedFace, testedCube)){  return false;}
-	
-	
-	// si tous les tests passent sans pouvoir trouver un axe selon lequel les deux AABB sont clairement séparées, alors on peut dire selon le SAT que les deux éléments s'intersectent.
+bool processIntersectionFaceVoxel(Face testedFace, Voxel& currentVoxel){
+
 	return true;
 }
 
@@ -286,6 +88,7 @@ int main(int argc, char** argv) {
 	//CHARGEMENT FICHIERS .DATA
 	//on charge le fichier en mode "read binary"
 	FILE *dataFile = NULL;
+	size_t test_fic = 0;
 	dataFile = fopen("terrain_data/page_1.data", "rb");
 	if(NULL == dataFile){
 		std::cout << "[!] > Unable to load the file dataFile" << std::endl;
@@ -294,8 +97,8 @@ int main(int argc, char** argv) {
 
 	//lecture du nombre de vertex et de faces, puis affichage ds la console
 	uint32_t nbVertice = 0, nbFace = 0;	
-	fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
-	fread(&nbFace, sizeof(nbFace), 1, dataFile);
+	test_fic = fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
+	test_fic =fread(&nbFace, sizeof(nbFace), 1, dataFile);
 	std::cout << "Number of vertices : " << nbVertice << std::endl;
 	std::cout << "Number of faces : " << nbFace << std::endl;
 	
@@ -305,10 +108,10 @@ int main(int argc, char** argv) {
 	double altMax = 0;
 	
 	double * positionsData = new double[3*nbVertice];
-	fread(positionsData, sizeof(double), 3*nbVertice, dataFile); // to read the positions of the vertices
+	test_fic = fread(positionsData, sizeof(double), 3*nbVertice, dataFile); // to read the positions of the vertices
 	
 	uint32_t * facesData = new uint32_t[3*nbFace];
-	fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
+	test_fic = fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
 	
 	fclose(dataFile);
 
@@ -387,64 +190,26 @@ int main(int argc, char** argv) {
 		tabVoxel[n]=0;
 	}
 
-	double cubeSize = GRID_3D_SIZE/(double)nbSub;
-	double halfCubeSize = cubeSize/2;
+	double voxelSize = GRID_3D_SIZE/(double)nbSub;
 	
 	//INTERSECTION PROCESSING
 	
-	//For each cube
-	/*for(uint16_t k=0;k<nbSub;++k){
-		for(uint16_t j=0;j<nbSub;++j){
-			for(uint16_t i=0;i<nbSub;++i){
-				uint32_t currentVoxel = i + nbSub*j + nbSub*nbSub*k;
-				double posX =  i*cubeSize -1;
-				double posY = -j*cubeSize +1;
-				double posZ = -k*cubeSize +1;
-				Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
-				
-				//For each Face
-				for(uint32_t n=0;n<nbFace;++n){
-					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
-						tabVoxel[currentVoxel] += 1;
-					}
-				}
-			}
-		}
-	}*/
 	//For each Face
 	//#pragma omp parallel for
 	for(uint32_t n=0; n<nbFace;++n){
-		uint32_t minVoxelX =  (getminX(tabF[n]) - cubeSize + 1.)/cubeSize;
-		uint32_t maxVoxelX =  (getmaxX(tabF[n]) + cubeSize + 1.)/cubeSize;
-		uint32_t minVoxelY =  (getminY(tabF[n]) - cubeSize + 1.)/cubeSize;
-		uint32_t maxVoxelY =  (getmaxY(tabF[n]) + cubeSize + 1.)/cubeSize;
-		uint32_t minVoxelZ =  (getminZ(tabF[n]) - cubeSize + 1.)/cubeSize;
-		uint32_t maxVoxelZ =  (getmaxZ(tabF[n]) + cubeSize + 1.)/cubeSize;
-		/*std::cout<<"]> pos min X "<<getminX(tabF[n])<<std::endl;
-		std::cout<<"]> pos max X "<<getmaxX(tabF[n])<<std::endl;
-		std::cout<<"]> pos min Y "<<getminY(tabF[n])<<std::endl;
-		std::cout<<"]> pos max Y "<<getmaxY(tabF[n])<<std::endl;
-		std::cout<<"]> pos min Z "<<getminZ(tabF[n])<<std::endl;
-		std::cout<<"]> pos max Z "<<getmaxZ(tabF[n])<<std::endl;
-		
-		std::cout<<"]]> Cube size "<<cubeSize<<std::endl;
-		std::cout<<n<<"]> Case min X "<<minVoxelX<<std::endl;
-		std::cout<<n<<"]> Case max X "<<maxVoxelX<<std::endl;
-		std::cout<<n<<"]> Case min Y "<<minVoxelY<<std::endl;
-		std::cout<<n<<"]> Case max Y "<<maxVoxelY<<std::endl;
-		std::cout<<n<<"]> Case min Z "<<minVoxelZ<<std::endl;
-		std::cout<<n<<"]> Case max Z "<<maxVoxelZ<<std::endl;
-		tabVoxel[minVoxelZ*nbSub*nbSub + nbSub*minVoxelY + minVoxelX]+=5;
-		tabVoxel[maxVoxelZ*nbSub*nbSub + nbSub*maxVoxelY + maxVoxelX]+=10;*/
+		uint32_t minVoxelX =  (getminX(tabF[n]) - voxelSize + 1.)/voxelSize;
+		uint32_t maxVoxelX =  (getmaxX(tabF[n]) + voxelSize + 1.)/voxelSize;
+		uint32_t minVoxelY =  (getminY(tabF[n]) - voxelSize + 1.)/voxelSize;
+		uint32_t maxVoxelY =  (getmaxY(tabF[n]) + voxelSize + 1.)/voxelSize;
+		uint32_t minVoxelZ =  (getminZ(tabF[n]) - voxelSize + 1.)/voxelSize;
+		uint32_t maxVoxelZ =  (getmaxZ(tabF[n]) + voxelSize + 1.)/voxelSize;
 
+		//For each cube of the face bounding box
 		for(uint32_t k=minVoxelZ; k<=maxVoxelZ; ++k){
 			for(uint32_t j=minVoxelY;j<=maxVoxelY; ++j){
 				for(uint32_t i=minVoxelX;i<=maxVoxelX;++i){
-					double posX =  i*cubeSize -1;
-					double posY =  j*cubeSize -1;
-					double posZ =  k*cubeSize -1;
-					Cube currentCube = createCube(posX-halfCubeSize,posX+halfCubeSize,posY+halfCubeSize,posY-halfCubeSize,posZ-halfCubeSize,posZ+halfCubeSize);
-					if(aabbTriboxOverlapTest(currentCube, tabF[n], altMin, altMax)){
+					Voxel vox = createVoxel(i*voxelSize -1, j*voxelSize -1, k*voxelSize -1, voxelSize);
+					if(processIntersectionFaceVoxel(tabF[n], vox)){
 						tabVoxel[i + nbSub*j + nbSub*nbSub*k]++;
 					}
 				}
@@ -460,8 +225,8 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	fwrite(&nbSub, sizeof(uint32_t), 1, voxelFile);
-	fwrite(tabVoxel, tailleTabVoxel*sizeof(uint32_t), 1, voxelFile);
+	test_fic = fwrite(&nbSub, sizeof(uint32_t), 1, voxelFile);
+	test_fic = fwrite(tabVoxel, tailleTabVoxel*sizeof(uint32_t), 1, voxelFile);
 
 	fclose(voxelFile);
 	
