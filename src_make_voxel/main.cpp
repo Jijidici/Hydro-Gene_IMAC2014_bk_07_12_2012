@@ -102,8 +102,15 @@ bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double thre
 	return false;
 }
 
+/* Calculation of intersections between the main plane and the voxel */
+bool processIntersectionMainPlaneVoxel(){
+
+
+	return false;
+}
+
 /* Main calculation of the intersection between the face and a voxel */
-bool processIntersectionFaceVoxel(Face testedFace, Voxel currentVoxel){
+bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	/* vertex Bounding sphere radius and edge bounding cylinder radius */
 	double Rc = currentVoxel.size * HALF_SQRT_3;
 
@@ -130,9 +137,11 @@ int main(int argc, char** argv) {
 	/* ************************************************************* */
 	
 	//CHARGEMENT FICHIERS .DATA
+
+	size_t test_fic = 0;
+	// FILES 1 - BEGIN
 	//on charge le fichier en mode "read binary"
 	FILE *dataFile = NULL;
-	size_t test_fic = 0;
 	dataFile = fopen("terrain_data/page_1.data", "rb");
 	if(NULL == dataFile){
 		std::cout << "[!] > Unable to load the file dataFile" << std::endl;
@@ -143,8 +152,8 @@ int main(int argc, char** argv) {
 	uint32_t nbVertice = 0, nbFace = 0;	
 	test_fic = fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
 	test_fic =fread(&nbFace, sizeof(nbFace), 1, dataFile);
-	std::cout << "Number of vertices : " << nbVertice << std::endl;
-	std::cout << "Number of faces : " << nbFace << std::endl;
+	std::cout << "-> Number of vertices : " << nbVertice << std::endl;
+	std::cout << "-> Number of faces : " << nbFace << std::endl;
 	
 	
 	// altitudes min et max de la carte
@@ -158,7 +167,31 @@ int main(int argc, char** argv) {
 	test_fic = fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
 	
 	fclose(dataFile);
+	//FILE 1 -END
 
+	//FILE 2 - BEGIN
+	FILE* normalFile = NULL;
+	normalFile = fopen("terrain_data/page_2.data", "rb");
+	if(NULL == normalFile){
+		std::cout << "[!]-> Unable to load the file normalFile" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//moving to the beginning of face normals in the file
+	test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
+	if(test_fic != 0){
+		std::cout<<"[!]-> Problem in moving on the normal file"<<std::endl;
+		return EXIT_FAILURE;
+	}
+
+	double * normalData = new double[3*nbFace];
+	test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
+	std::cout << "-> Number of face normals : " << test_fic << std::endl;
+
+	fclose(normalFile);
+	//FILE 2 - END
+
+	//CONSTRUCTION OF THE DATA STRUCTURES
 	Vertex * tabV = new Vertex[nbVertice];
 	
 	for(uint32_t n=0;n<nbVertice;++n){ // to create the vertices tab
@@ -176,7 +209,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	std::cout << " -> altitude max : " << altMax << " - altitude min : " << altMin << std::endl;
+	std::cout<<"-> altitude max : "<<altMax<<" - altitude min : "<<altMin<<std::endl;
 	
 	
 	Face * tabF = new Face[nbFace];
@@ -190,7 +223,9 @@ int main(int argc, char** argv) {
 		tabF[n].s1 = tabV + vertexCoordsOffset[0] -1;
 		tabF[n].s2 = tabV + vertexCoordsOffset[1] -1;
 		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
+		tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+1], normalData[3*n+2]);
 	}
+	delete[] normalData;
 
 	//VOXELS ARRAY CREATION
 	
@@ -220,40 +255,47 @@ int main(int argc, char** argv) {
 	
 	if(nbSub == 0){
 		nbSub = 16;
-		std::cout << "-> ! nbSub = 0, nbSub initialisé à 16" << std::endl;
+		std::cout << "-> ! nbSub = 0, Nombre de subdivisions initialisé à 16" << std::endl;
 	}else{
 		std::cout << "-> Nombre de subdivisions arrondi à la puissance de 2 la plus proche" << std::endl;
 	}
 	
-	std::cout << "-> nbSub : " << nbSub << std::endl;
+	std::cout << "-> Nombre de subdivisions : " << nbSub << std::endl;
 
 	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
-	uint32_t* tabVoxel = new uint32_t[tailleTabVoxel];
+	uint32_t* tabVoxel = NULL;
+	tabVoxel = new uint32_t[tailleTabVoxel];
+	if(NULL == tabVoxel){
+		std::cout<<"[!] -> Allocation failure for tabVoxel"<<std::endl;
+		return EXIT_FAILURE;
+	}
 	
 	for(uint32_t n=0;n<tailleTabVoxel;++n){
 		tabVoxel[n]=0;
 	}
 
 	double voxelSize = GRID_3D_SIZE/(double)nbSub;
+	double halfVoxelSize = voxelSize/2;
 	
 	//INTERSECTION PROCESSING
 	
 	//For each Face
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for(uint32_t n=0; n<nbFace;++n){
-		uint32_t minVoxelX =  (getminX(tabF[n]) - voxelSize + 1.)/voxelSize;
-		uint32_t maxVoxelX =  (getmaxX(tabF[n]) + voxelSize + 1.)/voxelSize;
-		uint32_t minVoxelY =  (getminY(tabF[n]) - voxelSize + 1.)/voxelSize;
-		uint32_t maxVoxelY =  (getmaxY(tabF[n]) + voxelSize + 1.)/voxelSize;
-		uint32_t minVoxelZ =  (getminZ(tabF[n]) - voxelSize + 1.)/voxelSize;
-		uint32_t maxVoxelZ =  (getmaxZ(tabF[n]) + voxelSize + 1.)/voxelSize;
+
+		int minVoxelX = glm::min(uint32_t(getminX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		int maxVoxelX = glm::min(uint32_t(getmaxX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		int minVoxelY = glm::min(uint32_t(getminY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		int maxVoxelY = glm::min(uint32_t(getmaxY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		int minVoxelZ = glm::min(uint32_t(getminZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		int maxVoxelZ = glm::min(uint32_t(getmaxZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
 
 		//For each cube of the face bounding box
 		for(uint32_t k=minVoxelZ; k<=maxVoxelZ; ++k){
 			for(uint32_t j=minVoxelY;j<=maxVoxelY; ++j){
 				for(uint32_t i=minVoxelX;i<=maxVoxelX;++i){
 					Voxel vox = createVoxel(i*voxelSize -1, j*voxelSize -1, k*voxelSize -1, voxelSize);
-					if(processIntersectionFaceVoxel(tabF[n], vox)){
+					if(processIntersectionPolygonVoxel(tabF[n], vox)){
 						tabVoxel[i + nbSub*j + nbSub*nbSub*k]++;
 					}
 				}
