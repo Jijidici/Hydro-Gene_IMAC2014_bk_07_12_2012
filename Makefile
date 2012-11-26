@@ -20,6 +20,7 @@ SRC_COMMON_FILES = $(shell find $(SRC_COMMON_PATH) -type f -name '*.cpp')
 OBJ_COMMON_FILES = $(patsubst $(SRC_COMMON_PATH)/%.cpp, $(SRC_COMMON_PATH)/%.o, $(SRC_COMMON_FILES))
 
 all: $(BIN_PATH)/$(EXEC_VOXEL) $(BIN_PATH)/$(EXEC_DISPLAY)
+	@echo [--FINISHED--]
 
 $(BIN_PATH)/$(EXEC_VOXEL): $(OBJ_VOXEL_FILES) 
 	$(CC) -o $@ $^ $(LDFLAGS)

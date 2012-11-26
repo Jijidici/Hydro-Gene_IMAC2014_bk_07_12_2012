@@ -52,4 +52,8 @@ Cube createCube(double inLeft, double inRight, double inTop, double inBottom, do
 	return newCube;
 }
 
+glm::dvec3 createVector(glm::dvec3 begin, glm::dvec3 end){
+	return glm::dvec3(end.x - begin.x, end.y - begin.y, end.z - begin.z);
+}
+
 #endif

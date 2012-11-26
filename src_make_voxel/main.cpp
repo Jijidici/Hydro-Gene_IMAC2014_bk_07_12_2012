@@ -1,14 +1,12 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
-
 #include <glm/glm.hpp>
-
 #include <stdint.h>
-
 #include <omp.h>
-
 #include "types.hpp"
+
+#define HALF_SQRT_3 0.866025404
 
 static const size_t GRID_3D_SIZE = 2;
 
@@ -70,10 +68,56 @@ double getminZ(Face testedFace){
 /************************/
 /******INTERSECTION******/
 /************************/
+/* Calculation of intersection between a vertex of the face and the voxel */
+bool processIntersectionVertexVoxel(Vertex* v, Voxel vox, double threshold){
+	/* if the center of the voxel is inside a bounding sphere with a radius of threshold, turn it on */
+	if(glm::distance(v->pos, vox.c) < threshold){
+		return true;
+	}
+	return false;
+}
 
-bool processIntersectionFaceVoxel(Face testedFace, Voxel& currentVoxel){
+/* Calculation of intersection between an edge of the face and the voxel */
+bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double threshold){
+	/* Projection of the voxel center on the edge */
+	glm::dvec3 edgeDir = createVector(v1->pos, v2->pos);
+	double edgeLength = glm::length(edgeDir);
+	/* case where the segment is a point */
+	if(edgeLength <= 0){
+		return false;
+	}
 
-	return true;
+	glm::dvec3 edgeDiff = createVector(v1->pos, vox.c);
+	float t = glm::dot(edgeDiff, edgeDir)/glm::dot(edgeDir, edgeDir);
+	/* If the projected isn't on the segment */
+	if(t<0. || t>edgeLength){
+		return false;
+	}
+	glm::dvec3 voxCProjected = glm::dvec3(v1->pos.x + t*edgeDir.x, v1->pos.y + t*edgeDir.y, v1->pos.z + t*edgeDir.z);
+
+	/* if the center of the voxel is inside a bounding cylinder with a radius of threshold, turn it on */
+	if(glm::distance(vox.c, voxCProjected) < threshold){
+		return true;
+	}
+	return false;
+}
+
+/* Main calculation of the intersection between the face and a voxel */
+bool processIntersectionFaceVoxel(Face testedFace, Voxel currentVoxel){
+	/* vertex Bounding sphere radius and edge bounding cylinder radius */
+	double Rc = currentVoxel.size * HALF_SQRT_3;
+
+	/* Vertices tests */
+	if(processIntersectionVertexVoxel(testedFace.s1, currentVoxel, Rc)){ return true;}
+	if(processIntersectionVertexVoxel(testedFace.s2, currentVoxel, Rc)){ return true;}
+	if(processIntersectionVertexVoxel(testedFace.s3, currentVoxel, Rc)){ return true;}
+
+	/* Edges tests */
+	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
+	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
+	if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
+
+	return false;
 }
 
 /*************************************/
