@@ -64,6 +64,12 @@ double getminZ(Face testedFace){
 	return minZ;
 }
 
+/* GEOMETRICS */
+/* Determine if a point is in front of or behind a Face | >0 = in front of | <0 = behind | ==0 = on */
+double relativePositionVertexFace(Face f, glm::dvec3 vx){
+	glm::dvec3 referentVector = createVector(f.s1->pos, vx);
+	return glm::dot(referentVector, f.normal);
+}
 
 /************************/
 /******INTERSECTION******/
@@ -103,7 +109,9 @@ bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double thre
 }
 
 /* Calculation of intersections between the main plane and the voxel */
-bool processIntersectionMainPlaneVoxel(){
+bool processIntersectionMainPlaneVoxel(Face testedFace, Voxel currentVoxel){
+	/* Choose the good diagonal to calculate alpha angle */
+
 
 
 	return false;
