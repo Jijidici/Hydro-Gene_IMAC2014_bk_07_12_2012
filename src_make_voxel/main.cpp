@@ -111,9 +111,42 @@ bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double thre
 /* Calculation of intersections between the main plane and the voxel */
 bool processIntersectionMainPlaneVoxel(Face testedFace, Voxel currentVoxel){
 	/* Choose the good diagonal to calculate alpha angle */
+	double cRelativity = relativePositionVertexFace(testedFace, currentVoxel.c);
+	double halfVoxelSize = currentVoxel.size/2.;
 
+	/* to calculate voxel vertices */
+	int coef1 = -1;
+	int coef2 = -1;
+	int coef3 = -1;
+	glm::dvec3 v;
+	int i;
+	for(i=0;i<8;++i){
+		v = glm::dvec3(currentVoxel.c.x + coef1*halfVoxelSize, currentVoxel.c.y + coef2*halfVoxelSize, currentVoxel.c.z + coef3*halfVoxelSize);
+		/* check if the current vertex is on the other side of the plan that the center */
+		if(cRelativity * relativePositionVertexFace(testedFace, v)  >= 0){
+			break;
+		}
+		coef1 *= -1;
+		if(coef1 == -1){ 
+			coef2 *= -1;
+			if(coef2 == -1){ coef3 *= -1; }
+		}
+	}
 
+	/* if no vertex are on the other side, don't put the cube on */
+	if(i == 8){ return false; }
 
+	//construction of the diagonal
+	glm::dvec3 diagonal = createVector(v, currentVoxel.c);
+	double cosAlpha = glm::dot(testedFace.normal, diagonal) / (glm::length(testedFace.normal)*glm::length(diagonal));
+
+	//calculate the plane ordonate d
+	double d = - testedFace.normal.x*testedFace.s1->pos.x - testedFace.normal.y*testedFace.s1->pos.y - testedFace.normal.z*testedFace.s1->pos.z; 
+
+	//real test
+	double threshold = currentVoxel.size*HALF_SQRT_3*cosAlpha;
+	double testedValue = testedFace.normal.x*currentVoxel.c.x + testedFace.normal.y*currentVoxel.c.y + testedFace.normal.z*currentVoxel.c.z + d;
+	if(testedValue <= threshold && testedValue >= -threshold){return true;}
 	return false;
 }
 
@@ -131,6 +164,8 @@ bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
 	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
 	if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
+
+	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel)){return true;}
 
 	return false;
 }
@@ -283,7 +318,6 @@ int main(int argc, char** argv) {
 	}
 
 	double voxelSize = GRID_3D_SIZE/(double)nbSub;
-	double halfVoxelSize = voxelSize/2;
 	
 	//INTERSECTION PROCESSING
 	
@@ -291,12 +325,12 @@ int main(int argc, char** argv) {
 	#pragma omp parallel for
 	for(uint32_t n=0; n<nbFace;++n){
 
-		int minVoxelX = glm::min(uint32_t(getminX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
-		int maxVoxelX = glm::min(uint32_t(getmaxX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
-		int minVoxelY = glm::min(uint32_t(getminY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
-		int maxVoxelY = glm::min(uint32_t(getmaxY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
-		int minVoxelZ = glm::min(uint32_t(getminZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
-		int maxVoxelZ = glm::min(uint32_t(getmaxZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t minVoxelX = glm::min(uint32_t(getminX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t maxVoxelX = glm::min(uint32_t(getmaxX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t minVoxelY = glm::min(uint32_t(getminY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t maxVoxelY = glm::min(uint32_t(getmaxY(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t minVoxelZ = glm::min(uint32_t(getminZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
+		uint32_t maxVoxelZ = glm::min(uint32_t(getmaxZ(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
 
 		//For each cube of the face bounding box
 		for(uint32_t k=minVoxelZ; k<=maxVoxelZ; ++k){

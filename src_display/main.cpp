@@ -24,6 +24,7 @@ uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 
 	uint32_t nbIntersectionMax = 0;
 	
+			std::cout<<"ok"<<std::endl;
 	//addition des cases 2 à 2 par ligne
 	uint32_t index=0;
 	uint32_t newTab[4*nbSub*nbSub*nbSub];
@@ -41,6 +42,7 @@ uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 			index2++;
 		}
 	}
+	delete[] newTab;
 	//addition des cases 2 à 2 en profondeur	
 	uint32_t index3=0;
 	uint32_t tailleNewTab3 = nbSub*nbSub*nbSub;
@@ -51,11 +53,13 @@ uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 			index3++;
 		}
 	}
+	delete[] newTab2;
 	//on change tabVoxel
 	for(uint32_t i=0;i<nbSub*nbSub*nbSub;++i){
 		tabVoxel[i] = newTab3[i];
 		if(tabVoxel[i] > nbIntersectionMax) nbIntersectionMax = tabVoxel[i];
 	}
+	delete[] newTab3;
 	for(uint32_t i=nbSub*nbSub*nbSub; i<8*nbSub*nbSub*nbSub; ++i){
 		tabVoxel[i] = 0;
 	}
@@ -86,7 +90,7 @@ int main(int argc, char** argv){
 	size_t test_fic = 0;
 	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "rb");
 	if(NULL == voxelFile){
-		std::cout << "[!] > Unable to load the file voxelFile" << std::endl;
+		std::cout << "[!]-> Unable to load the file voxelFile" << std::endl;
 		return EXIT_FAILURE;
 	}
 
