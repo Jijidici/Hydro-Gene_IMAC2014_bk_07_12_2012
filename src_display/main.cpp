@@ -23,11 +23,9 @@ static const size_t GRID_3D_SIZE = 2;
 uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 
 	uint32_t nbIntersectionMax = 0;
-	
-			std::cout<<"ok"<<std::endl;
 	//addition des cases 2 à 2 par ligne
 	uint32_t index=0;
-	uint32_t newTab[4*nbSub*nbSub*nbSub];
+	uint32_t* newTab = new uint32_t[4*nbSub*nbSub*nbSub];
 	for(uint32_t i=0;i<8*nbSub*nbSub*nbSub;i=i+2){
 		newTab[index] = tabVoxel[i]+tabVoxel[i+1];
 		index++;
@@ -35,7 +33,7 @@ uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 	//addition des cases 2 à 2 par colonne
 	uint32_t index2=0;
 	uint32_t tailleNewTab2 = 2*nbSub*nbSub*nbSub;
-	uint32_t newTab2[tailleNewTab2];
+	uint32_t* newTab2 = new uint32_t[tailleNewTab2];
 	for(uint32_t j=0;j<4*nbSub*nbSub;j=j+2){
 		for(uint32_t i=j*nbSub;i<j*nbSub+nbSub;++i){
 			newTab2[index2] = newTab[i]+newTab[i+nbSub];
@@ -46,7 +44,7 @@ uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
 	//addition des cases 2 à 2 en profondeur	
 	uint32_t index3=0;
 	uint32_t tailleNewTab3 = nbSub*nbSub*nbSub;
-	uint32_t newTab3[tailleNewTab3];
+	uint32_t* newTab3 = new uint32_t[tailleNewTab3];
 	for(uint32_t j=0;j<2*nbSub;j=j+2){
 		for(uint32_t i=j*nbSub*nbSub;i<j*nbSub*nbSub+nbSub*nbSub;++i){
 			newTab3[index3] = newTab2[i]+newTab2[i+nbSub*nbSub];
@@ -316,7 +314,8 @@ int main(int argc, char** argv){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
 		if(changeNbSubPlus){ //si on a appuyé sur +
-			std::cout << " > Nombre de subdivisions : " << nbSub << std::endl;
+			std::cout<<"ok"<<std::endl;
+			std::cout <<"-> Nombre de subdivisions : "<<nbSub<<std::endl;
 			nbIntersectionMax = increaseTab(nbSub,tabVoxel,nbSubMax,tabVoxelMax, constNbIntersectionMax);
 			changeNbSubPlus = false;
 		}
