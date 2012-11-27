@@ -71,6 +71,11 @@ double relativePositionVertexFace(Face f, glm::dvec3 vx){
 	return glm::dot(referentVector, f.normal);
 }
 
+double relativePositionVertexFace(Plane p, glm::dvec3 vx){
+	glm::dvec3 referentVector = createVector(p.s1.pos, vx);
+	return glm::dot(referentVector, p.normal);
+}
+
 /************************/
 /******INTERSECTION******/
 /************************/
@@ -115,11 +120,11 @@ bool processIntersectionMainPlaneVoxel(Face testedFace, Voxel currentVoxel){
 	double halfVoxelSize = currentVoxel.size/2.;
 
 	/* to calculate voxel vertices */
-	int coef1 = -1;
-	int coef2 = -1;
-	int coef3 = -1;
+	int8_t coef1 = -1;
+	int8_t coef2 = -1;
+	int8_t coef3 = -1;
 	glm::dvec3 v;
-	int i;
+	int8_t i;
 	for(i=0;i<8;++i){
 		v = glm::dvec3(currentVoxel.c.x + coef1*halfVoxelSize, currentVoxel.c.y + coef2*halfVoxelSize, currentVoxel.c.z + coef3*halfVoxelSize);
 		/* check if the current vertex is on the other side of the plan that the center */
@@ -150,6 +155,27 @@ bool processIntersectionMainPlaneVoxel(Face testedFace, Voxel currentVoxel){
 	return false;
 }
 
+/* Calculate if the voxel center is in the Ei prism */
+bool processIntersectionOtherPlanesVoxel(Face testedFace, Voxel currentVoxel){
+	/* Define the three perpendicular planes to the trangle Face passing by each edge */
+	Plane e1 = createPlane(testedFace.s1->pos, testedFace.s2->pos, testedFace.s1->pos + testedFace.normal);
+	Plane e2 = createPlane(testedFace.s1->pos, testedFace.s3->pos, testedFace.s1->pos + testedFace.normal);
+	Plane e3 = createPlane(testedFace.s2->pos, testedFace.s3->pos, testedFace.s2->pos + testedFace.normal);
+
+	/* Test if the center of the voxel is on the same side of the tree plan */
+	double cRelativityE1 = relativePositionVertexFace(e1, currentVoxel.c);
+	double cRelativityE2 = relativePositionVertexFace(e2, currentVoxel.c);
+	double cRelativityE3 = relativePositionVertexFace(e3, currentVoxel.c);
+
+	/* If it's the case, the voxel center is in the Ei prism */
+	if((cRelativityE1 <=0 && cRelativityE2 <=0 && cRelativityE3 <=0) ||
+	   (cRelativityE1 >=0 && cRelativityE2 >=0 && cRelativityE3 >=0)){
+		return true;
+	}
+
+	return false;
+}
+
 /* Main calculation of the intersection between the face and a voxel */
 bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	/* vertex Bounding sphere radius and edge bounding cylinder radius */
@@ -165,7 +191,10 @@ bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
 	if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
 
-	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel)){return true;}
+	/* Face test */
+	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) || processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
+		return true;
+	}
 
 	return false;
 }

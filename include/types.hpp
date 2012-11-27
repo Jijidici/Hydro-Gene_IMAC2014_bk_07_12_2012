@@ -27,6 +27,11 @@ typedef struct s_voxel{
 	double size;
 }Voxel;
 
+typedef struct s_plane{
+	Vertex s1, s2, s3;
+	glm::dvec3 normal;
+}Plane;
+
 /******************************************/
 /*          FUNCTIONS                     */
 /******************************************/
@@ -55,6 +60,15 @@ Cube createCube(double inLeft, double inRight, double inTop, double inBottom, do
 
 glm::dvec3 createVector(glm::dvec3 begin, glm::dvec3 end){
 	return glm::dvec3(end.x - begin.x, end.y - begin.y, end.z - begin.z);
+}
+
+Plane createPlane(glm::dvec3 inS1, glm::dvec3 inS2, glm::dvec3 inS3){
+	Plane newPlane;
+	newPlane.normal = glm::cross(createVector(inS1, inS2), createVector(inS1, inS3));
+	newPlane.s1.pos = inS1;
+	newPlane.s2.pos = inS2;
+	newPlane.s3.pos = inS3;
+	return newPlane;
 }
 
 #endif
