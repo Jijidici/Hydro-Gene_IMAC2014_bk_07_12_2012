@@ -1,0 +1,11 @@
+$ git status
+
+#Hydro-Gene Project - IMAC 2012/2013
+#Untracked Files : 
+ 
+./bin/hg_voxel_maker
+./bin/hg_display
+./terrain_data/page_3.data
+./terrain_data/page_4.data
+./terrain_data/page_5.data
+./voxels_data/*.data
