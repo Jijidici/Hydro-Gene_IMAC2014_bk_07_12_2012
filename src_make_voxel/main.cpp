@@ -6,8 +6,8 @@
 #include <omp.h>
 #include "types.hpp"
 
-#define HALF_SQRT_3 0.866025404
 
+static const double HALF_SQRT_3 = 0.866025404 *2.;
 static const size_t GRID_3D_SIZE = 2;
 
 /******************************************/
@@ -82,7 +82,7 @@ double relativePositionVertexFace(Plane p, glm::dvec3 vx){
 /* Calculation of intersection between a vertex of the face and the voxel */
 bool processIntersectionVertexVoxel(Vertex* v, Voxel vox, double threshold){
 	/* if the center of the voxel is inside a bounding sphere with a radius of threshold, turn it on */
-	if(glm::distance(v->pos, vox.c) < threshold){
+	if(glm::distance(v->pos, vox.c) <= threshold){
 		return true;
 	}
 	return false;
@@ -107,7 +107,7 @@ bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double thre
 	glm::dvec3 voxCProjected = glm::dvec3(v1->pos.x + t*edgeDir.x, v1->pos.y + t*edgeDir.y, v1->pos.z + t*edgeDir.z);
 
 	/* if the center of the voxel is inside a bounding cylinder with a radius of threshold, turn it on */
-	if(glm::distance(vox.c, voxCProjected) < threshold){
+	if(glm::distance(vox.c, voxCProjected) <= threshold){
 		return true;
 	}
 	return false;
@@ -192,7 +192,7 @@ bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
 
 	/* Face test */
-	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) || processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
+	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) && processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
 		return true;
 	}
 

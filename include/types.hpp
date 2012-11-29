@@ -53,7 +53,7 @@ Cube createCube(double inLeft, double inRight, double inTop, double inBottom, do
 	newCube.bottom = inBottom;
 	newCube.far = inFar;
 	newCube.near = inNear;
-	newCube.nbVertices = 36;
+	newCube.nbVertices = 8;
 	
 	return newCube;
 }

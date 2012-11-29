@@ -18,6 +18,8 @@ static const Uint32 MIN_LOOP_TIME = 1000/FRAME_RATE;
 static const size_t WINDOW_WIDTH = 600, WINDOW_HEIGHT = 600;
 static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
+static const size_t INTERSECTION_LOCATION = 1;
+static const size_t VOXPOSITION_LOCATION = 2;
 static const size_t GRID_3D_SIZE = 2;
 
 uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
@@ -82,7 +84,7 @@ uint32_t increaseTab(uint32_t nbSub, uint32_t *tabVoxel, uint32_t nbSubMax, uint
 }
 
 int main(int argc, char** argv){
-	
+
 	// OPEN AND READ THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
 	size_t test_fic = 0;
@@ -103,12 +105,26 @@ int main(int argc, char** argv){
 	uint32_t nbSub = nbSubMax;
 	uint32_t nbSubExpected = nbSub;
 	
-	
+	uint32_t nbIntersectionMax = 0;
+	uint32_t nbIntersectedVoxel = 0;
 	uint32_t* tabVoxel = new uint32_t[lengthTabVoxel];
 	for(uint32_t i = 0; i<lengthTabVoxel; ++i){
 		tabVoxel[i] = tabVoxelMax[i];
+
+		//get the number of intersection maximum
+		if(tabVoxel[i]>nbIntersectionMax){
+			nbIntersectionMax = tabVoxel[i];
+		}
+
+		//get the number of voxel with at least one intersection
+		if(tabVoxel[i] != 0){
+			nbIntersectedVoxel++;
+		}
 	}
-	
+	uint32_t constNbIntersectionMax = nbIntersectionMax;
+
+	std::cout<<" -> Nb intersected Voxel : "<<nbIntersectedVoxel<<std::endl;
+
 	if(argc > 1){
 		if(atoi(argv[1]) <= (int) nbSubMax){
 			nbSubExpected = atoi(argv[1]);
@@ -144,23 +160,32 @@ int main(int argc, char** argv){
 	std::cout << "-> nbSub : " << nbSubExpected << std::endl;
 	
 	
-	fclose(voxelFile);
-
-	uint32_t nbIntersectionMax = 0;
-	for(uint32_t i=0; i<lengthTabVoxel;++i){
-		if(tabVoxel[i]>nbIntersectionMax){
-			nbIntersectionMax = tabVoxel[i];
-		}
-	}
-	uint32_t constNbIntersectionMax = nbIntersectionMax;
-	
+	fclose(voxelFile);	
 	
 	while(nbSub > nbSubExpected){
 		nbSub /= 2;
 		nbIntersectionMax = increaseTab(nbSub, tabVoxel, nbSubMax, tabVoxelMax, constNbIntersectionMax);
 	}
 	
-	
+	double cubeSize = GRID_3D_SIZE/(double)nbSub;
+
+	//create the intersected voxel nbIntersection and voxel position data array
+	GLfloat * voxInterPos = new GLfloat[4*nbIntersectedVoxel]; 
+	uint32_t idxVoxInterPos = 0;
+	for(uint32_t n=0;n<lengthTabVoxel;++n){
+		if(tabVoxel[n] != 0){
+			//get the number of intersection for this full voxel
+			voxInterPos[idxVoxInterPos] = tabVoxel[n];
+			//get the position of this voxel
+			uint32_t squareNbSub = nbSub*nbSub;
+			voxInterPos[idxVoxInterPos + 3] = (n / squareNbSub) * cubeSize;
+			uint32_t reste = n % squareNbSub;
+			voxInterPos[idxVoxInterPos + 2] = (reste / nbSub) * cubeSize;
+			voxInterPos[idxVoxInterPos + 1] = (reste % nbSub) * cubeSize;			
+			idxVoxInterPos += 4;
+		}
+	}
+
 	/* ************************************************************* */
 	/* *************INITIALISATION OPENGL/SDL*********************** */
 	/* ************************************************************* */
@@ -175,6 +200,9 @@ int main(int argc, char** argv){
 	GLenum error;
 	if(GLEW_OK != (error = glewInit())) {
 		std::cerr << "Impossible d'initialiser GLEW: " << glewGetErrorString(error) << std::endl;
+		delete[] tabVoxel;
+		delete[] tabVoxelMax;
+		delete[] voxInterPos;
 		return EXIT_FAILURE;
 	}
 	
@@ -185,70 +213,48 @@ int main(int argc, char** argv){
 	// CREATION DU CUBE 
 	Cube aCube = createCube(-0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f);
 	
-	GLdouble cubeVertices[] = {//
+	GLdouble cubeVertices[] = {
 		aCube.left, aCube.bottom, aCube.near,
 		aCube.right, aCube.bottom, aCube.near,
-		aCube.left, aCube.top, aCube.near,
-
-		aCube.right, aCube.bottom, aCube.near,
 		aCube.right, aCube.top, aCube.near,
 		aCube.left, aCube.top, aCube.near,
-
-		//
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.right, aCube.top, aCube.far,
-
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-		aCube.right, aCube.top, aCube.near,
-
-		//
-		aCube.left, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-
-		aCube.left, aCube.top, aCube.near,
-		aCube.right, aCube.top, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		////
 		aCube.left, aCube.bottom, aCube.far,
 		aCube.right, aCube.bottom, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		aCube.right, aCube.bottom, aCube.far,
 		aCube.right, aCube.top, aCube.far,
 		aCube.left, aCube.top, aCube.far,
-
-		//
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.left, aCube.bottom, aCube.far,
-		aCube.left, aCube.top, aCube.far,
-
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.left, aCube.top, aCube.far,
-		aCube.left, aCube.top, aCube.near,
-
-		//
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-
-		aCube.left, aCube.bottom, aCube.near,
-		aCube.right, aCube.bottom, aCube.far,
-		aCube.left, aCube.bottom, aCube.far
 	};
+
+	uint8_t cubeIndices[] = {
+		0, 1, 2, 2, 3, 0,
+		5, 4, 7, 7, 6, 5,
+		1, 5, 6, 6, 2, 1,
+		4, 0, 3, 3, 7, 4,
+		3, 2, 6, 6, 7, 3,
+		5, 4, 0, 0, 1, 5
+	};
+	uint8_t cubeIndicesLength = 36;
 
 	/* ******************************** */
 	/* 		Creation des VBO, VAO 		*/
 	/* ******************************** */
+	//Buffer de voxel pour connaitre le nombres d'intersection
+	GLuint vipBuffer = 0;
+	glGenBuffers(1, &vipBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vipBuffer);
+		glBufferData(GL_ARRAY_BUFFER, 4*nbIntersectedVoxel*sizeof(GL_FLOAT), voxInterPos, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	GLuint cubeVBO = 0;
 	glGenBuffers(1, &cubeVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	GLuint cubeIBO = 0;
+	glGenBuffers(1, &cubeIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	GLuint cubeVAO = 0;
 	glGenVertexArrays(1, &cubeVAO);  
@@ -257,13 +263,26 @@ int main(int argc, char** argv){
 		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 			glVertexAttribPointer(POSITION_LOCATION, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glEnableVertexAttribArray(INTERSECTION_LOCATION);
+		glEnableVertexAttribArray(VOXPOSITION_LOCATION);
+		glBindBuffer(GL_ARRAY_BUFFER, vipBuffer);
+			glVertexAttribPointer(INTERSECTION_LOCATION, 1, GL_FLOAT, GL_FALSE, 4*sizeof(uint32_t), NULL);
+			glVertexAttribPointer(VOXPOSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 4*sizeof(uint32_t), (const GLvoid*) sizeof(uint32_t));
+			glVertexAttribDivisor(INTERSECTION_LOCATION, 1);
+			glVertexAttribDivisor(VOXPOSITION_LOCATION, 1);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	// Creation des Shaders
 	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
 	if(!program){
 		glDeleteBuffers(1, &cubeVBO);
+		glDeleteBuffers(1, &cubeIBO);
 		glDeleteVertexArrays(1, &cubeVAO);
+		delete[] tabVoxel;
+		delete[] tabVoxelMax;
+		delete[] voxInterPos;
 		return (EXIT_FAILURE);
 	}
 	glUseProgram(program);
@@ -276,8 +295,9 @@ int main(int argc, char** argv){
 	glm::mat4 VP = P*V;
 	
 	// Recuperation des variables uniformes
-	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
-	
+	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersectionMax");
+	GLint CubeSizeLocation = glGetUniformLocation(program, "uCubeSize");
+	glUniform1f(CubeSizeLocation, cubeSize);
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
 	
@@ -314,7 +334,6 @@ int main(int argc, char** argv){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
 		if(changeNbSubPlus){ //si on a appuyé sur +
-			std::cout<<"ok"<<std::endl;
 			std::cout <<"-> Nombre de subdivisions : "<<nbSub<<std::endl;
 			nbIntersectionMax = increaseTab(nbSub,tabVoxel,nbSubMax,tabVoxelMax, constNbIntersectionMax);
 			changeNbSubPlus = false;
@@ -325,33 +344,21 @@ int main(int argc, char** argv){
 			nbIntersectionMax = reduceTab(nbSub,tabVoxel);
 			changeNbSubMinus = false;
 		}
-			
-		double cubeSize = GRID_3D_SIZE/(double)nbSub;
 
 		glm::mat4 MVP = glm::translate(VP, glm::vec3(offsetViewX, offsetViewY, offsetViewZ)); //MOVE WITH ARROWKEYS & ZOOM WITH SCROLL
 		MVP = glm::translate(MVP, glm::vec3(0.f, 0.f, -5.f)); //MOVE AWWAY FROM THE CAMERA
 		MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
 		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
-		
+		MVP = glm::translate(MVP, glm::vec3((cubeSize-GRID_3D_SIZE)/2, (cubeSize-GRID_3D_SIZE)/2, (cubeSize-GRID_3D_SIZE)/2)); //CENTER THE GRID
+		glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(MVP));
+		glUniform1i(NbIntersectionLocation, nbIntersectionMax);
+
 		// Affichage de la grille
-		for(uint32_t k=0;k<nbSub;++k){
-			for(uint32_t j=0;j<nbSub;++j){
-				for(uint32_t i=0;i<nbSub;++i){
-					uint32_t currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
-					if(currentNbIntersection != 0){
-						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, j*cubeSize-(GRID_3D_SIZE-cubeSize)/2, k*cubeSize-(GRID_3D_SIZE-cubeSize)/2)); //PLACEMENT OF EACH GRID CUBE
-						aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
-						glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(aCubeMVP));
-					
-						glUniform2i(NbIntersectionLocation, currentNbIntersection, nbIntersectionMax);
-					
-						glBindVertexArray(cubeVAO);
-							glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
-						glBindVertexArray(0);
-					}
-				}
-			}
-		}	
+		glBindVertexArray(cubeVAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+				glDrawElementsInstanced(GL_TRIANGLES, cubeIndicesLength, GL_UNSIGNED_BYTE, 0, nbIntersectedVoxel);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 		
 		// Mise à jour de l'affichage
 		SDL_GL_SwapBuffers();
@@ -503,9 +510,11 @@ int main(int argc, char** argv){
 	// Destruction des ressources OpenGL
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteBuffers(1, &cubeIBO);
 	
 	delete[] tabVoxel;
 	delete[] tabVoxelMax;
+	delete[] voxInterPos;
 	
 	return (EXIT_SUCCESS);
 }
