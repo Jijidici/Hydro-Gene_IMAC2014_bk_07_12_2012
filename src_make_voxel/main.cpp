@@ -3,6 +3,7 @@
 #include <cmath>
 #include <glm/glm.hpp>
 #include <stdint.h>
+#include <string.h>
 #include <omp.h>
 #include "types.hpp"
 
@@ -208,11 +209,10 @@ int main(int argc, char** argv) {
 	/* **************PRE - TRAITEMENT DES VOXELS******************** */
 	/* ************************************************************* */
 	
-	//CHARGEMENT FICHIERS .DATA
+	//CHARGEMENT PAGE1.DATA
 
 	size_t test_fic = 0;
-	// FILES 1 - BEGIN
-	//on charge le fichier en mode "read binary"
+
 	FILE *dataFile = NULL;
 	dataFile = fopen("terrain_data/page_1.data", "rb");
 	if(NULL == dataFile){
@@ -224,9 +224,10 @@ int main(int argc, char** argv) {
 	uint32_t nbVertice = 0, nbFace = 0;	
 	test_fic = fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
 	test_fic =fread(&nbFace, sizeof(nbFace), 1, dataFile);
+	std::cout << std::endl;
 	std::cout << "-> Number of vertices : " << nbVertice << std::endl;
 	std::cout << "-> Number of faces : " << nbFace << std::endl;
-	
+	std::cout << std::endl;	
 	
 	// altitudes min et max de la carte
 	double altMin = 0;
@@ -239,29 +240,6 @@ int main(int argc, char** argv) {
 	test_fic = fread(facesData, sizeof(uint32_t), 3*nbFace, dataFile); // to read the indexes of the vertices which compose each face
 	
 	fclose(dataFile);
-	//FILE 1 -END
-
-	//FILE 2 - BEGIN
-	FILE* normalFile = NULL;
-	normalFile = fopen("terrain_data/page_2.data", "rb");
-	if(NULL == normalFile){
-		std::cout << "[!]-> Unable to load the file normalFile" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//moving to the beginning of face normals in the file
-	test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
-	if(test_fic != 0){
-		std::cout<<"[!]-> Problem in moving on the normal file"<<std::endl;
-		return EXIT_FAILURE;
-	}
-
-	double * normalData = new double[3*nbFace];
-	test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
-	std::cout << "-> Number of face normals : " << test_fic << std::endl;
-
-	fclose(normalFile);
-	//FILE 2 - END
 
 	//CONSTRUCTION OF THE DATA STRUCTURES
 	Vertex * tabV = new Vertex[nbVertice];
@@ -281,7 +259,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	std::cout<<"-> altitude max : "<<altMax<<" - altitude min : "<<altMin<<std::endl;
+	std::cout<<"-> Altitude max : "<<altMax<<" - Altitude min : "<<altMin<<std::endl;
+	std::cout << std::endl;
 	
 	
 	Face * tabF = new Face[nbFace];
@@ -295,19 +274,140 @@ int main(int argc, char** argv) {
 		tabF[n].s1 = tabV + vertexCoordsOffset[0] -1;
 		tabF[n].s2 = tabV + vertexCoordsOffset[1] -1;
 		tabF[n].s3 = tabV + vertexCoordsOffset[2] -1;
-		tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+1], normalData[3*n+2]);
+		tabF[n].normal = glm::dvec3(0,0,0);
+		tabF[n].bending = 0;
+		tabF[n].drain = 0;
+		tabF[n].gradient = 0;
 	}
-	delete[] normalData;
 
 	//VOXELS ARRAY CREATION
 	
-	//valeur par défaut
+	//getting the arguments
+
 	uint32_t nbSub = 0;
-	
+	int p2Requested = 0;
+	int p4Requested = 0;
+	int d = 0;
+	int g = 0;
+	int s = 0;
+	int b = 0;
+
 	if(argc > 1){
-		nbSub = atoi(argv[1]);
+		std::cout << "############ REQUESTS ############" << std::endl;
+		char** tabArguments = new char*[argc];
+
+		for(int i = 0; i<argc-1; ++i){
+
+			tabArguments[i] = argv[i+1];
+
+			//if a number of subdivisions has been entered
+			if(atoi(tabArguments[i])) nbSub = atoi(tabArguments[i]);
+
+			//normals requested
+			else if(strcmp(tabArguments[i],"-n") == 0){
+				std::cout << "# Requested : loading of the normals" << std::endl;
+				p2Requested = 1;
+			}
+			else if ((strcmp(tabArguments[i],"-d") == 0)||(strcmp(tabArguments[i],"-b") == 0)||(strcmp(tabArguments[i],"-g") == 0)||(strcmp(tabArguments[i],"-s") == 0)) {
+				p4Requested = 1;
+				//drain coeff requested
+				if (strcmp(tabArguments[i],"-d") == 0){
+					std::cout << "-> Requested : loading of the drain coefficients" << std::endl;
+					d = 1;
+				}
+				//bending coeff requested
+				else if (strcmp(tabArguments[i],"-b") == 0){
+					std::cout << "-> Requested : loading of the bending coefficients" << std::endl;
+					b = 1;
+				}
+				//surfaces requested
+				else if (strcmp(tabArguments[i],"-s") == 0){
+					std::cout << "-> Requested : loading of the surfaces" << std::endl;
+					s = 1;
+				}
+				//gradients requested
+				else{
+					std::cout << "-> Requested : loading of the gradient coefficients" << std::endl;
+					g = 1;
+				}
+			}
+			else std::cout << "[!] Warning : the request " << tabArguments[i] << " does not exist." << std::endl;
+		}
+		delete[] tabArguments;
+		std::cout << "##################################" << std::endl;
 	}
+	std::cout << std::endl;
+
+	if(p2Requested){ //loading of the normals
+		FILE* normalFile = NULL;
+		normalFile = fopen("terrain_data/page_2.data", "rb");
+		if(NULL == normalFile){
+			std::cout << "[!]-> Unable to load the second data page" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		//moving to the beginning of face normals in the file
+		test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
+		if(test_fic != 0){
+			std::cout<<"[!]-> Unable to move inside the second data page"<<std::endl;
+			return EXIT_FAILURE;
+		}
+
+		double * normalData = new double[3*nbFace];
+		test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
+
+		for(uint32_t n=0;n<nbFace;++n){
+			tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+1], normalData[3*n+2]);
+		}
+
+		fclose(normalFile);
+		delete[] normalData;
+	}
+
+	if(p4Requested){
+		int* drainData = new int[nbFace];
+		double* otherData = new double[3*nbFace];
+
+		FILE* page4File = NULL;
+		page4File = fopen("terrain_data/page_4.data", "rb");
+		if(NULL == page4File){
+			std::cout << "[!]-> Unable to load the file fourth data page" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		//moving to the beginning of the other data in the file
+		test_fic = fseek(page4File, nbVertice*(sizeof(int)+3*sizeof(double)), SEEK_SET);
+		if(test_fic != 0){
+			std::cout<<"[!]-> Unable to move inside the fourth data page"<<std::endl;
+			return EXIT_FAILURE;
+		}
 	
+		for(uint32_t n=0;n<nbFace;++n){
+			test_fic = fread(drainData, sizeof(int), nbFace, page4File);
+			test_fic = fread(otherData, sizeof(double), 3*nbFace, page4File);
+		}
+
+		if(d){
+			for(uint32_t n=0;n<nbFace;++n) tabF[n].drain = drainData[n];
+		}
+		if(b){	
+			for(uint32_t n=0;n<nbFace;++n) tabF[n].bending = otherData[n*3];
+		}
+		if(s){
+			for(uint32_t n=0;n<nbFace;++n) tabF[n].surface = otherData[n*3+1];
+		}
+		if(g){
+			for(uint32_t n=0;n<nbFace;++n) tabF[n].gradient = otherData[n*3+2];
+		}
+	}
+
+	for(uint32_t n=0;n<10;++n){
+		std::cout << "drainData : " << tabF[n].drain << std::endl;
+	}
+	for(uint32_t n=0;n<10;++n){
+		std::cout << "bending : " << tabF[n].bending << std::endl;
+	}
+
 	uint32_t test = nbSub;
 	uint32_t power = 0;
 	
@@ -316,34 +416,38 @@ int main(int argc, char** argv) {
 		++power;
 	}
 	
-	uint32_t nbLow = pow(2,power);
-	uint32_t nbUp = pow(2,power+1);
-	
-	if(nbSub - nbLow < nbUp - nbSub){
-		nbSub = nbLow;
-	}else{
-		nbSub = nbUp;
-	}
-	
+
 	if(nbSub == 0){
 		nbSub = 16;
-		std::cout << "-> ! nbSub = 0, Nombre de subdivisions initialisé à 16" << std::endl;
+		std::cout << "-> [!] nbSub = 0, Number of subdivisions initialized to 16" << std::endl;
+		std::cout << std::endl;
 	}else{
-		std::cout << "-> Nombre de subdivisions arrondi à la puissance de 2 la plus proche" << std::endl;
+		uint32_t nbLow = pow(2,power);
+		uint32_t nbUp = pow(2,power+1);
+	
+		if(nbSub - nbLow < nbUp - nbSub){
+			nbSub = nbLow;
+		}else{
+			nbSub = nbUp;
+		}
+		std::cout << "-> Number of subdivisions rounded to the closest power of two" << std::endl;
 	}
 	
-	std::cout << "-> Nombre de subdivisions : " << nbSub << std::endl;
+	std::cout << "-> Number of subdivisions : " << nbSub << std::endl;
+	std::cout << std::endl;
 
-	size_t const tailleTabVoxel = nbSub*nbSub*nbSub;
-	uint32_t* tabVoxel = NULL;
-	tabVoxel = new uint32_t[tailleTabVoxel];
+	uint32_t nbSubY = nbSub; //number of subdivisions on Y
+	size_t const tailleTabVoxel = nbSub*nbSubY*nbSub;
+	VoxelData* tabVoxel = NULL;
+	tabVoxel = new VoxelData[tailleTabVoxel];
 	if(NULL == tabVoxel){
 		std::cout<<"[!] -> Allocation failure for tabVoxel"<<std::endl;
 		return EXIT_FAILURE;
 	}
 	
 	for(uint32_t n=0;n<tailleTabVoxel;++n){
-		tabVoxel[n]=0;
+		tabVoxel[n].nbFaces=0;
+		tabVoxel[n].sumNormal = glm::dvec3(0,0,0);
 	}
 
 	double voxelSize = GRID_3D_SIZE/(double)nbSub;
@@ -367,23 +471,25 @@ int main(int argc, char** argv) {
 				for(uint32_t i=minVoxelX;i<=maxVoxelX;++i){
 					Voxel vox = createVoxel(i*voxelSize -1, j*voxelSize -1, k*voxelSize -1, voxelSize);
 					if(processIntersectionPolygonVoxel(tabF[n], vox)){
-						tabVoxel[i + nbSub*j + nbSub*nbSub*k]++;
+						uint32_t currentIndex = i + nbSub*j + k*nbSub*nbSubY;
+						tabVoxel[currentIndex].nbFaces++;
+						tabVoxel[currentIndex].sumNormal = glm::dvec3(tabVoxel[currentIndex].sumNormal.x + tabF[n].normal.x, tabVoxel[currentIndex].sumNormal.y + tabF[n].normal.y, tabVoxel[currentIndex].sumNormal.z + tabF[n].normal.z);
 					}
 				}
 			}
 		}
 	}
-	
+
 	//WRITTING THE VOXEL-INTERSECTION FILE
 	FILE* voxelFile = NULL;
 	voxelFile = fopen("voxels_data/voxel_intersec_1.data", "wb");
 	if(NULL == voxelFile){
-		std::cout << "[!] > Impossible to load the file voxelFile" << std::endl;
+		std::cout << "[!] > Unable to load the file voxelFile" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	test_fic = fwrite(&nbSub, sizeof(uint32_t), 1, voxelFile);
-	test_fic = fwrite(tabVoxel, tailleTabVoxel*sizeof(uint32_t), 1, voxelFile);
+	test_fic = fwrite(tabVoxel, tailleTabVoxel*sizeof(VoxelData), 1, voxelFile);
 
 	fclose(voxelFile);
 	

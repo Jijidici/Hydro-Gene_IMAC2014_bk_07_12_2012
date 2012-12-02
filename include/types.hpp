@@ -10,6 +10,10 @@ typedef struct s_vertex{
 typedef struct s_face{
 	Vertex *s1, *s2, *s3;
 	glm::dvec3 normal;
+	double bending;
+	double gradient;
+	double surface;
+	int drain;
 }Face;
 
 typedef struct s_cube{
@@ -26,6 +30,11 @@ typedef struct s_voxel{
 	glm::dvec3 c;
 	double size;
 }Voxel;
+
+typedef struct s_voxelData{ //voxels dans tabVoxel
+	glm::dvec3 sumNormal;
+	uint32_t nbFaces;
+}VoxelData;
 
 typedef struct s_plane{
 	Vertex s1, s2, s3;
