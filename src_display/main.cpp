@@ -20,56 +20,62 @@ static const size_t BYTES_PER_PIXEL = 32;
 static const size_t POSITION_LOCATION = 0;
 static const size_t GRID_3D_SIZE = 2;
 
-uint32_t reduceTab(uint32_t nbSub, uint32_t *tabVoxel){
+uint32_t reduceTab(uint32_t nbSub, VoxelData *tabVoxel){
+
+	//NB notation means the old nbSub
+	uint32_t nbSubX = nbSub;	// = NBX/2
+	uint32_t nbSubY = nbSub;	// = NBY/2
+	uint32_t nbSubZ = nbSub;	// = NBZ/2
 
 	uint32_t nbIntersectionMax = 0;
-	//addition des cases 2 à 2 par ligne
+	//line
 	uint32_t index=0;
-	uint32_t* newTab = new uint32_t[4*nbSub*nbSub*nbSub];
-	for(uint32_t i=0;i<8*nbSub*nbSub*nbSub;i=i+2){
-		newTab[index] = tabVoxel[i]+tabVoxel[i+1];
+	uint32_t* newTab = new uint32_t[nbSubX*(2*nbSubY)*(2*nbSubZ)]; //NBX is divided in 2
+	for(uint32_t i=0;i<(2*nbSubX)*(2*nbSubY)*(2*nbSubZ);i=i+2){ //i runs the entire length of tabVoxel, with a treshold of 2
+		newTab[index] = tabVoxel[i].nbFaces+tabVoxel[i+1].nbFaces;
 		index++;
 	}
-	//addition des cases 2 à 2 par colonne
+	//row
 	uint32_t index2=0;
-	uint32_t tailleNewTab2 = 2*nbSub*nbSub*nbSub;
+	uint32_t tailleNewTab2 = nbSubX*nbSubY*(2*nbSubZ); //NBY is now divided in 2
 	uint32_t* newTab2 = new uint32_t[tailleNewTab2];
-	for(uint32_t j=0;j<4*nbSub*nbSub;j=j+2){
-		for(uint32_t i=j*nbSub;i<j*nbSub+nbSub;++i){
-			newTab2[index2] = newTab[i]+newTab[i+nbSub];
+	for(uint32_t j=0;j<(2*nbSubY)*(2*nbSubZ);j=j+2){
+		for(uint32_t i=j*nbSubX;i<j*nbSubX+nbSubX;++i){
+			newTab2[index2] = newTab[i]+newTab[i+nbSubX];
 			index2++;
 		}
 	}
 	delete[] newTab;
-	//addition des cases 2 à 2 en profondeur	
+	//depth
 	uint32_t index3=0;
-	uint32_t tailleNewTab3 = nbSub*nbSub*nbSub;
+	uint32_t tailleNewTab3 = nbSubX*nbSubY*nbSubZ; //NBZ is now divided in 2
 	uint32_t* newTab3 = new uint32_t[tailleNewTab3];
-	for(uint32_t j=0;j<2*nbSub;j=j+2){
-		for(uint32_t i=j*nbSub*nbSub;i<j*nbSub*nbSub+nbSub*nbSub;++i){
-			newTab3[index3] = newTab2[i]+newTab2[i+nbSub*nbSub];
+	for(uint32_t j=0;j<2*nbSubZ;j=j+2){
+		for(uint32_t i=j*nbSubX*nbSubY;i<j*nbSubX*nbSubY+nbSubX*nbSubY;++i){
+			newTab3[index3] = newTab2[i]+newTab2[i+nbSubX*nbSubY];
 			index3++;
 		}
 	}
 	delete[] newTab2;
-	//on change tabVoxel
-	for(uint32_t i=0;i<nbSub*nbSub*nbSub;++i){
-		tabVoxel[i] = newTab3[i];
-		if(tabVoxel[i] > nbIntersectionMax) nbIntersectionMax = tabVoxel[i];
+	//update of tabVoxel
+	for(uint32_t i=0;i<nbSubX*nbSubY*nbSubZ;++i){
+		tabVoxel[i].nbFaces = newTab3[i];
+		if(tabVoxel[i].nbFaces > nbIntersectionMax) nbIntersectionMax = tabVoxel[i].nbFaces;
 	}
 	delete[] newTab3;
-	for(uint32_t i=nbSub*nbSub*nbSub; i<8*nbSub*nbSub*nbSub; ++i){
-		tabVoxel[i] = 0;
+	for(uint32_t i=nbSubX*nbSubY*nbSubZ; i<8*nbSubX*nbSubY*nbSubZ; ++i){
+		tabVoxel[i].nbFaces = 0;
 	}
 	return nbIntersectionMax;
 }
 
-uint32_t increaseTab(uint32_t nbSub, uint32_t *tabVoxel, uint32_t nbSubMax, uint32_t *tabVoxelMax, uint32_t constNbIntersectionMax){
+uint32_t increaseTab(uint32_t nbSub, VoxelData *tabVoxel, uint32_t nbSubMax, VoxelData *tabVoxelMax, uint32_t constNbIntersectionMax){
 	
+	uint32_t nbSubMaxY = nbSubMax;
 	uint32_t nbIntersectionMax = constNbIntersectionMax;
 	
-	for(uint32_t i=0;i<nbSubMax*nbSubMax*nbSubMax;++i){
-		tabVoxel[i] = tabVoxelMax[i];
+	for(uint32_t i=0;i<nbSubMax*nbSubMaxY*nbSubMax;++i){
+		tabVoxel[i].nbFaces = tabVoxelMax[i].nbFaces;
 	}
 	
 	if(nbSub != nbSubMax){
@@ -96,17 +102,25 @@ int main(int argc, char** argv){
 	
 	test_fic = fread(&nbSubMax, sizeof(uint32_t), 1, voxelFile);
 
-	uint32_t lengthTabVoxel = nbSubMax*nbSubMax*nbSubMax;
-	uint32_t* tabVoxelMax = new uint32_t[lengthTabVoxel];
-	test_fic = fread(tabVoxelMax, lengthTabVoxel*sizeof(uint32_t), 1, voxelFile);
+	uint32_t nbSubMaxY = nbSubMax; //number of subdivisions on Y
+
+	uint32_t lengthTabVoxel = nbSubMax*nbSubMaxY*nbSubMax;
+	VoxelData* tabVoxelMax = new VoxelData[lengthTabVoxel];
+	test_fic = fread(tabVoxelMax, lengthTabVoxel*sizeof(VoxelData), 1, voxelFile);
 	
 	uint32_t nbSub = nbSubMax;
+	uint32_t nbSubY = nbSubMaxY;
 	uint32_t nbSubExpected = nbSub;
 	
 	
-	uint32_t* tabVoxel = new uint32_t[lengthTabVoxel];
+	VoxelData* tabVoxel = new VoxelData[lengthTabVoxel];
 	for(uint32_t i = 0; i<lengthTabVoxel; ++i){
-		tabVoxel[i] = tabVoxelMax[i];
+		tabVoxel[i].nbFaces = tabVoxelMax[i].nbFaces;
+		tabVoxel[i].sumNormal = tabVoxelMax[i].sumNormal;
+		tabVoxel[i].sumDrain = tabVoxelMax[i].sumDrain;
+		tabVoxel[i].sumBending = tabVoxelMax[i].sumBending;
+		tabVoxel[i].sumGradient = tabVoxelMax[i].sumGradient;
+		tabVoxel[i].sumSurface = tabVoxelMax[i].sumSurface;
 	}
 	
 	if(argc > 1){
@@ -148,8 +162,8 @@ int main(int argc, char** argv){
 
 	uint32_t nbIntersectionMax = 0;
 	for(uint32_t i=0; i<lengthTabVoxel;++i){
-		if(tabVoxel[i]>nbIntersectionMax){
-			nbIntersectionMax = tabVoxel[i];
+		if(tabVoxel[i].nbFaces>nbIntersectionMax){
+			nbIntersectionMax = tabVoxel[i].nbFaces;
 		}
 	}
 	uint32_t constNbIntersectionMax = nbIntersectionMax;
@@ -157,6 +171,7 @@ int main(int argc, char** argv){
 	
 	while(nbSub > nbSubExpected){
 		nbSub /= 2;
+		nbSubY /=2;
 		nbIntersectionMax = increaseTab(nbSub, tabVoxel, nbSubMax, tabVoxelMax, constNbIntersectionMax);
 	}
 	
@@ -298,7 +313,7 @@ int main(int argc, char** argv){
 	uint16_t savedClicY = -1;
 	bool changeNbSubPlus = false;
 	bool changeNbSubMinus = false;
-		
+
 	/* ************************************************************* */
 	/* ********************DISPLAY LOOP***************************** */
 	/* ************************************************************* */
@@ -314,14 +329,13 @@ int main(int argc, char** argv){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
 		if(changeNbSubPlus){ //si on a appuyé sur +
-			std::cout<<"ok"<<std::endl;
-			std::cout <<"-> Nombre de subdivisions : "<<nbSub<<std::endl;
+			std::cout <<"-> New number of subdivisions : "<<nbSub<<std::endl;
 			nbIntersectionMax = increaseTab(nbSub,tabVoxel,nbSubMax,tabVoxelMax, constNbIntersectionMax);
 			changeNbSubPlus = false;
 		}
 		
 		if(changeNbSubMinus){ //si on a appuyé sur -
-			std::cout << " > Nombre de subdivisions : " << nbSub << std::endl;
+			std::cout << " > New number of subdivisions : " << nbSub << std::endl;
 			nbIntersectionMax = reduceTab(nbSub,tabVoxel);
 			changeNbSubMinus = false;
 		}
@@ -333,12 +347,16 @@ int main(int argc, char** argv){
 		MVP = glm::rotate(MVP, angleViewX + tmpAngleViewX,  glm::vec3(0.f, 1.f, 0.f)); //ROTATE WITH XCOORDS CLIC
 		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
 		
+		nbSubY = nbSub;
 		// Affichage de la grille
 		for(uint32_t k=0;k<nbSub;++k){
-			for(uint32_t j=0;j<nbSub;++j){
+			for(uint32_t j=0;j<nbSubY;++j){
 				for(uint32_t i=0;i<nbSub;++i){
-					uint32_t currentNbIntersection = tabVoxel[k*nbSub*nbSub + j*nbSub + i];
+					uint32_t currentIndex = k*nbSub*nbSubY + j*nbSub + i;
+					uint32_t currentNbIntersection = tabVoxel[k*nbSub*nbSubY + j*nbSub + i].nbFaces;
 					if(currentNbIntersection != 0){
+						//std::cout << "somme normales cube " << currentIndex << " : " << tabVoxel[currentIndex].sumNormal.x << " " << tabVoxel[currentIndex].sumNormal.y << " " <<tabVoxel[currentIndex].sumNormal.z << " " << std::endl;
+						//std::cout << "nombre d'intersection cube " << currentIndex << " : " << tabVoxel[currentIndex].nbFaces << std::endl;
 						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, j*cubeSize-(GRID_3D_SIZE-cubeSize)/2, k*cubeSize-(GRID_3D_SIZE-cubeSize)/2)); //PLACEMENT OF EACH GRID CUBE
 						aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
 						glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(aCubeMVP));
@@ -390,16 +408,29 @@ int main(int argc, char** argv){
 							if(nbSub != nbSubMax){
 								nbSub *= 2;
 								changeNbSubPlus = true;
-							}else std::cout << "Nombre de subdivisions maximum atteint." << std::endl;						
+							}else std::cout << "You reached the maximum number of subdivisions." << std::endl;						
 						break;
 						
 						case SDLK_KP_MINUS:
 							if(nbSub != 1){
 								nbSub /= 2;
 								changeNbSubMinus = true;
-							}else std::cout << "Nombre de subdivisions minimum atteint." << std::endl;						
+							}else std::cout << "You reached the minimum number of subdivisions." << std::endl;						
 						break;
 						
+						case SDLK_p:
+							if(nbSub != nbSubMax){
+								nbSub *= 2;
+								changeNbSubPlus = true;
+							}else std::cout << "You reached the maximum number of subdivisions." << std::endl;						
+						break;
+						
+						case SDLK_m:
+							if(nbSub != 1){
+								nbSub /= 2;
+								changeNbSubMinus = true;
+							}else std::cout << "You reached the minimum number of subdivisions." << std::endl;						
+						break;
 						case SDLK_SPACE:
 						break;
 						

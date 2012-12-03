@@ -285,12 +285,12 @@ int main(int argc, char** argv) {
 	//getting the arguments
 
 	uint32_t nbSub = 0;
-	int p2Requested = 0;
 	int p4Requested = 0;
 	int d = 0;
 	int g = 0;
 	int s = 0;
 	int b = 0;
+	int normal = 0;
 
 	if(argc > 1){
 		std::cout << "############ REQUESTS ############" << std::endl;
@@ -305,8 +305,8 @@ int main(int argc, char** argv) {
 
 			//normals requested
 			else if(strcmp(tabArguments[i],"-n") == 0){
-				std::cout << "# Requested : loading of the normals" << std::endl;
-				p2Requested = 1;
+				std::cout << "-> Requested : loading of the normals" << std::endl;
+				normal = 1;
 			}
 			else if ((strcmp(tabArguments[i],"-d") == 0)||(strcmp(tabArguments[i],"-b") == 0)||(strcmp(tabArguments[i],"-g") == 0)||(strcmp(tabArguments[i],"-s") == 0)) {
 				p4Requested = 1;
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
 	}
 	std::cout << std::endl;
 
-	if(p2Requested){ //loading of the normals
+	if(normal){ //loading of the normals
 		FILE* normalFile = NULL;
 		normalFile = fopen("terrain_data/page_2.data", "rb");
 		if(NULL == normalFile){
@@ -400,14 +400,14 @@ int main(int argc, char** argv) {
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].gradient = otherData[n*3+2];
 		}
 	}
-
+/*
 	for(uint32_t n=0;n<10;++n){
 		std::cout << "drainData : " << tabF[n].drain << std::endl;
 	}
 	for(uint32_t n=0;n<10;++n){
 		std::cout << "bending : " << tabF[n].bending << std::endl;
 	}
-
+*/
 	uint32_t test = nbSub;
 	uint32_t power = 0;
 	
@@ -448,6 +448,10 @@ int main(int argc, char** argv) {
 	for(uint32_t n=0;n<tailleTabVoxel;++n){
 		tabVoxel[n].nbFaces=0;
 		tabVoxel[n].sumNormal = glm::dvec3(0,0,0);
+		tabVoxel[d].sumDrain = 0;
+		tabVoxel[g].sumGradient = 0;
+		tabVoxel[s].sumSurface = 0;
+		tabVoxel[b].sumBending = 0;
 	}
 
 	double voxelSize = GRID_3D_SIZE/(double)nbSub;
@@ -473,8 +477,12 @@ int main(int argc, char** argv) {
 					if(processIntersectionPolygonVoxel(tabF[n], vox)){
 						uint32_t currentIndex = i + nbSub*j + k*nbSub*nbSubY;
 						tabVoxel[currentIndex].nbFaces++;
-						tabVoxel[currentIndex].sumNormal = glm::dvec3(tabVoxel[currentIndex].sumNormal.x + tabF[n].normal.x, tabVoxel[currentIndex].sumNormal.y + tabF[n].normal.y, tabVoxel[currentIndex].sumNormal.z + tabF[n].normal.z);
-					}
+						if(normal) tabVoxel[currentIndex].sumNormal = glm::dvec3(tabVoxel[currentIndex].sumNormal.x + tabF[n].normal.x, tabVoxel[currentIndex].sumNormal.y + tabF[n].normal.y, tabVoxel[currentIndex].sumNormal.z + tabF[n].normal.z);
+						if(d) tabVoxel[currentIndex].sumDrain = tabVoxel[currentIndex].sumDrain + tabF[n].drain;
+						if(g) tabVoxel[currentIndex].sumGradient = tabVoxel[currentIndex].sumGradient + tabF[n].gradient;
+						if(s) tabVoxel[currentIndex].sumSurface = tabVoxel[currentIndex].sumSurface + tabF[n].surface;
+						if(b) tabVoxel[currentIndex].sumBending = tabVoxel[currentIndex].sumBending + tabF[n].bending;			
+					} 						
 				}
 			}
 		}
