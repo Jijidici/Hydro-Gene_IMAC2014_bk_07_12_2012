@@ -278,6 +278,7 @@ int main(int argc, char** argv) {
 		tabF[n].bending = 0;
 		tabF[n].drain = 0;
 		tabF[n].gradient = 0;
+		tabF[n].surface = 0;
 	}
 
 	//VOXELS ARRAY CREATION
@@ -383,8 +384,8 @@ int main(int argc, char** argv) {
 		}
 	
 		for(uint32_t n=0;n<nbFace;++n){
-			test_fic = fread(drainData, sizeof(int), nbFace, page4File);
-			test_fic = fread(otherData, sizeof(double), 3*nbFace, page4File);
+			test_fic = fread(&(drainData[n]), sizeof(int), 1, page4File);
+			test_fic = fread(&(otherData[3*n]), sizeof(double), 3, page4File);
 		}
 
 		if(d){
@@ -481,7 +482,7 @@ int main(int argc, char** argv) {
 						if(d) tabVoxel[currentIndex].sumDrain = tabVoxel[currentIndex].sumDrain + tabF[n].drain;
 						if(g) tabVoxel[currentIndex].sumGradient = tabVoxel[currentIndex].sumGradient + tabF[n].gradient;
 						if(s) tabVoxel[currentIndex].sumSurface = tabVoxel[currentIndex].sumSurface + tabF[n].surface;
-						if(b) tabVoxel[currentIndex].sumBending = tabVoxel[currentIndex].sumBending + tabF[n].bending;			
+						if(b) tabVoxel[currentIndex].sumBending = tabVoxel[currentIndex].sumBending + tabF[n].bending;	
 					} 						
 				}
 			}
