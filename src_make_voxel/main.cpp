@@ -169,7 +169,7 @@ bool processIntersectionOtherPlanesVoxel(Face testedFace, Voxel currentVoxel){
 	double cRelativityE3 = relativePositionVertexFace(e3, currentVoxel.c);
 
 	/* If it's the case, the voxel center is in the Ei prism */
-	if((cRelativityE1 <=0 && cRelativityE2 <=0 && cRelativityE3 <=0) ||
+	if((cRelativityE1 <=0 && cRelativityE2 <=0 && cRelativityE3 <=0) &&
 	   (cRelativityE1 >=0 && cRelativityE2 >=0 && cRelativityE3 >=0)){
 		return true;
 	}
@@ -209,6 +209,8 @@ int main(int argc, char** argv) {
 	/* **************PRE - TRAITEMENT DES VOXELS******************** */
 	/* ************************************************************* */
 	
+	std::cout << std::endl << "############################# INITIALISATION #############################" << std::endl;
+
 	//CHARGEMENT PAGE1.DATA
 
 	size_t test_fic = 0;
@@ -224,10 +226,8 @@ int main(int argc, char** argv) {
 	uint32_t nbVertice = 0, nbFace = 0;	
 	test_fic = fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
 	test_fic =fread(&nbFace, sizeof(nbFace), 1, dataFile);
-	std::cout << std::endl;
-	std::cout << "-> Number of vertices : " << nbVertice << std::endl;
-	std::cout << "-> Number of faces : " << nbFace << std::endl;
-	std::cout << std::endl;	
+	std::cout << std::endl << "-> Number of vertices : " << nbVertice << std::endl;
+	std::cout << "-> Number of faces : " << nbFace << std::endl << std::endl;
 	
 	// altitudes min et max de la carte
 	double altMin = 0;
@@ -260,8 +260,6 @@ int main(int argc, char** argv) {
 	}
 
 	std::cout<<"-> Altitude max : "<<altMax<<" - Altitude min : "<<altMin<<std::endl;
-	std::cout << std::endl;
-	
 	
 	Face * tabF = new Face[nbFace];
 	uint32_t vertexCoordsOffset[3];
@@ -294,7 +292,6 @@ int main(int argc, char** argv) {
 	int normal = 0;
 
 	if(argc > 1){
-		std::cout << "############ REQUESTS ############" << std::endl;
 		char** tabArguments = new char*[argc];
 
 		for(int i = 0; i<argc-1; ++i){
@@ -304,12 +301,26 @@ int main(int argc, char** argv) {
 			//if a number of subdivisions has been entered
 			if(atoi(tabArguments[i])) nbSub = atoi(tabArguments[i]);
 
+			else if(strcmp(tabArguments[i],"help") == 0){
+				std::cout << std::endl << "############## HELP ##############" << std::endl;
+				std::cout << "usage : <name> <number of subdivisions> -<option>" << std::endl << std::endl;
+				std::cout << "You can put several options at the same time. Options available :" << std::endl;
+				std::cout << "-n : the normal of the faces are stocked in the voxel_data file" << std::endl;
+				std::cout << "-b : the bending coefficient of the faces are stocked in the voxel_data file" << std::endl;
+				std::cout << "-g : the gradients of the faces are stocked in the voxel_data file" << std::endl;
+				std::cout << "-s : the surface area of the faces are stocked in the voxel_data file" << std::endl;
+				std::cout << "-d : the drain of the faces are stocked in the voxel_data file" << std::endl;
+				std::cout << "##################################" << std::endl;
+			}
+
 			//normals requested
 			else if(strcmp(tabArguments[i],"-n") == 0){
+				if(!normal && !p4Requested) std::cout << std::endl << "############ REQUESTS ############" << std::endl;
 				std::cout << "-> Requested : loading of the normals" << std::endl;
 				normal = 1;
 			}
 			else if ((strcmp(tabArguments[i],"-d") == 0)||(strcmp(tabArguments[i],"-b") == 0)||(strcmp(tabArguments[i],"-g") == 0)||(strcmp(tabArguments[i],"-s") == 0)) {
+				if(!normal && !p4Requested) std::cout << "############ REQUESTS ############" << std::endl;
 				p4Requested = 1;
 				//drain coeff requested
 				if (strcmp(tabArguments[i],"-d") == 0){
@@ -332,38 +343,38 @@ int main(int argc, char** argv) {
 					g = 1;
 				}
 			}
-			else std::cout << "[!] Warning : the request " << tabArguments[i] << " does not exist." << std::endl;
+			else{
+				std::cout << std::endl << "[!] Warning : the request \"" << tabArguments[i] << "\" does not exist. Enter \"help\" to see the available options." << std::endl;
+			}
 		}
 		delete[] tabArguments;
-		std::cout << "##################################" << std::endl;
+		if(p4Requested||normal) std::cout << "##################################" << std::endl;
 	}
 	std::cout << std::endl;
 
-	if(normal){ //loading of the normals
-		FILE* normalFile = NULL;
-		normalFile = fopen("terrain_data/page_2.data", "rb");
-		if(NULL == normalFile){
-			std::cout << "[!]-> Unable to load the second data page" << std::endl;
-			return EXIT_FAILURE;
-		}
-
-		//moving to the beginning of face normals in the file
-		test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
-		if(test_fic != 0){
-			std::cout<<"[!]-> Unable to move inside the second data page"<<std::endl;
-			return EXIT_FAILURE;
-		}
-
-		double * normalData = new double[3*nbFace];
-		test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
-
-		for(uint32_t n=0;n<nbFace;++n){
-			tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+1], normalData[3*n+2]);
-		}
-
-		fclose(normalFile);
-		delete[] normalData;
+	FILE* normalFile = NULL;
+	normalFile = fopen("terrain_data/page_2.data", "rb");
+	if(NULL == normalFile){
+		std::cout << "[!]-> Unable to load the second data page" << std::endl;
+		return EXIT_FAILURE;
 	}
+
+	//moving to the beginning of face normals in the file
+	test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
+	if(test_fic != 0){
+		std::cout<<"[!]-> Unable to move inside the second data page"<<std::endl;
+		return EXIT_FAILURE;
+	}
+
+	double * normalData = new double[3*nbFace];
+	test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
+
+	for(uint32_t n=0;n<nbFace;++n){
+		tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+2], normalData[3*n+1]);
+	}
+
+	fclose(normalFile);
+	delete[] normalData;
 
 	if(p4Requested){
 		int* drainData = new int[nbFace];
@@ -401,14 +412,7 @@ int main(int argc, char** argv) {
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].gradient = otherData[n*3+2];
 		}
 	}
-/*
-	for(uint32_t n=0;n<10;++n){
-		std::cout << "drainData : " << tabF[n].drain << std::endl;
-	}
-	for(uint32_t n=0;n<10;++n){
-		std::cout << "bending : " << tabF[n].bending << std::endl;
-	}
-*/
+
 	uint32_t test = nbSub;
 	uint32_t power = 0;
 	
@@ -421,7 +425,6 @@ int main(int argc, char** argv) {
 	if(nbSub == 0){
 		nbSub = 16;
 		std::cout << "-> [!] nbSub = 0, Number of subdivisions initialized to 16" << std::endl;
-		std::cout << std::endl;
 	}else{
 		uint32_t nbLow = pow(2,power);
 		uint32_t nbUp = pow(2,power+1);
@@ -435,7 +438,7 @@ int main(int argc, char** argv) {
 	}
 	
 	std::cout << "-> Number of subdivisions : " << nbSub << std::endl;
-	std::cout << std::endl;
+	std::cout << std::endl << "##########################################################################" << std::endl << std::endl;
 
 	uint32_t nbSubY = nbSub; //number of subdivisions on Y
 	size_t const tailleTabVoxel = nbSub*nbSubY*nbSub;
@@ -460,7 +463,7 @@ int main(int argc, char** argv) {
 	//INTERSECTION PROCESSING
 	
 	//For each Face
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for(uint32_t n=0; n<nbFace;++n){
 
 		uint32_t minVoxelX = glm::min(uint32_t(getminX(tabF[n])/voxelSize + nbSub*0.5), nbSub-1);
