@@ -200,6 +200,18 @@ bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
 	return false;
 }
 
+void printHelp(){
+	std::cout << std::endl << "############## HELP ##############" << std::endl;
+	std::cout << "usage : ./bin/hg_voxel_maker <number of subdivisions> -<option>" << std::endl << std::endl;
+	std::cout << "You can put several options at the same time. Options available :" << std::endl;
+	std::cout << "-n : the normal of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "-b : the bending coefficient of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "-g : the gradients of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "-s : the surface area of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "-d : the drain of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "##################################" << std::endl << std::endl;
+}
+
 /*************************************/
 /*             MAIN                  */
 /*************************************/
@@ -226,9 +238,7 @@ int main(int argc, char** argv) {
 	uint32_t nbVertice = 0, nbFace = 0;	
 	test_fic = fread(&nbVertice, sizeof(nbVertice), 1, dataFile);
 	test_fic =fread(&nbFace, sizeof(nbFace), 1, dataFile);
-	std::cout << std::endl << "-> Number of vertices : " << nbVertice << std::endl;
-	std::cout << "-> Number of faces : " << nbFace << std::endl << std::endl;
-	
+
 	// altitudes min et max de la carte
 	double altMin = 0;
 	double altMax = 0;
@@ -259,8 +269,6 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	std::cout<<"-> Altitude max : "<<altMax<<" - Altitude min : "<<altMin<<std::endl;
-	
 	Face * tabF = new Face[nbFace];
 	uint32_t vertexCoordsOffset[3];
 	
@@ -302,15 +310,7 @@ int main(int argc, char** argv) {
 			if(atoi(tabArguments[i])) nbSub = atoi(tabArguments[i]);
 
 			else if(strcmp(tabArguments[i],"help") == 0){
-				std::cout << std::endl << "############## HELP ##############" << std::endl;
-				std::cout << "usage : <name> <number of subdivisions> -<option>" << std::endl << std::endl;
-				std::cout << "You can put several options at the same time. Options available :" << std::endl;
-				std::cout << "-n : the normal of the faces are stocked in the voxel_data file" << std::endl;
-				std::cout << "-b : the bending coefficient of the faces are stocked in the voxel_data file" << std::endl;
-				std::cout << "-g : the gradients of the faces are stocked in the voxel_data file" << std::endl;
-				std::cout << "-s : the surface area of the faces are stocked in the voxel_data file" << std::endl;
-				std::cout << "-d : the drain of the faces are stocked in the voxel_data file" << std::endl;
-				std::cout << "##################################" << std::endl;
+				printHelp();
 			}
 
 			//normals requested
@@ -344,25 +344,25 @@ int main(int argc, char** argv) {
 				}
 			}
 			else{
-				std::cout << std::endl << "[!] Warning : the request \"" << tabArguments[i] << "\" does not exist. Enter \"help\" to see the available options." << std::endl;
+				std::cout << std::endl << "[!] -> Warning : the request \"" << tabArguments[i] << "\" does not exist.";
+				printHelp();
 			}
 		}
 		delete[] tabArguments;
-		if(p4Requested||normal) std::cout << "##################################" << std::endl;
-	}
-	std::cout << std::endl;
+		if(p4Requested||normal) std::cout << "##################################" << std::endl << std::endl;
+	}else printHelp();
 
 	FILE* normalFile = NULL;
 	normalFile = fopen("terrain_data/page_2.data", "rb");
 	if(NULL == normalFile){
-		std::cout << "[!]-> Unable to load the second data page" << std::endl;
+		std::cout << "[!] -> Unable to load the second data page" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//moving to the beginning of face normals in the file
 	test_fic = fseek(normalFile, nbVertice*3*sizeof(double), SEEK_SET);
 	if(test_fic != 0){
-		std::cout<<"[!]-> Unable to move inside the second data page"<<std::endl;
+		std::cout<<"[!] -> Unable to move inside the second data page"<<std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -383,14 +383,14 @@ int main(int argc, char** argv) {
 		FILE* page4File = NULL;
 		page4File = fopen("terrain_data/page_4.data", "rb");
 		if(NULL == page4File){
-			std::cout << "[!]-> Unable to load the file fourth data page" << std::endl;
+			std::cout << "[!] -> Unable to load the file fourth data page" << std::endl;
 			return EXIT_FAILURE;
 		}
 
 		//moving to the beginning of the other data in the file
 		test_fic = fseek(page4File, nbVertice*(sizeof(int)+3*sizeof(double)), SEEK_SET);
 		if(test_fic != 0){
-			std::cout<<"[!]-> Unable to move inside the fourth data page"<<std::endl;
+			std::cout<<"[!] -> Unable to move inside the fourth data page"<<std::endl;
 			return EXIT_FAILURE;
 		}
 	
@@ -421,10 +421,13 @@ int main(int argc, char** argv) {
 		++power;
 	}
 	
+	std::cout << "-> Number of vertices : " << nbVertice << std::endl;
+	std::cout << "-> Number of faces : " << nbFace << std::endl;
+	std::cout <<"-> Altitude max : "<< altMax<< " - Altitude min : "<< altMin << std::endl << std::endl;
 
 	if(nbSub == 0){
 		nbSub = 16;
-		std::cout << "-> [!] nbSub = 0, Number of subdivisions initialized to 16" << std::endl;
+		std::cout << "[!] -> nbSub = 0, Number of subdivisions initialized to 16" << std::endl;
 	}else{
 		uint32_t nbLow = pow(2,power);
 		uint32_t nbUp = pow(2,power+1);
