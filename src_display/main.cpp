@@ -87,6 +87,22 @@ uint32_t increaseTab(uint32_t nbSub, VoxelData *tabVoxel, uint32_t nbSubMax, Vox
 	return nbIntersectionMax;
 }
 
+void resetShaderProgram(GLuint &program, GLint &MVPLocation, glm::mat4 &P, glm::mat4 &V, glm::mat4 &VP, GLint &NbIntersectionLocation, GLint &NormSumLocation){
+	glUseProgram(program);
+	
+	// Creation des Matrices
+	MVPLocation = glGetUniformLocation(program, "uMVPMatrix");
+	
+	P = glm::perspective(90.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 1000.f);
+	V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
+	VP = P*V;
+	
+	// Recuperation des variables uniformes
+	NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
+	NormSumLocation = glGetUniformLocation(program, "uNormSum");
+	
+}
+
 int main(int argc, char** argv){
 	
 	// OPEN AND READ THE VOXEL-INTERSECTION FILE
@@ -275,23 +291,30 @@ int main(int argc, char** argv){
 	glBindVertexArray(0);
 
 	// Creation des Shaders
-	GLuint program = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
-	if(!program){
+	GLuint programInter = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/basic.fs.glsl");
+	GLuint programNorm = imac2gl3::loadProgram("shaders/basic.vs.glsl", "shaders/norm.fs.glsl");
+	if(!programInter || !programNorm){
 		glDeleteBuffers(1, &cubeVBO);
 		glDeleteVertexArrays(1, &cubeVAO);
 		return (EXIT_FAILURE);
 	}
+	
+	GLuint program = programInter;
+	//program = programNorm;
+	
 	glUseProgram(program);
 
 	// Creation des Matrices
 	GLint MVPLocation = glGetUniformLocation(program, "uMVPMatrix");
-
+	
 	glm::mat4 P = glm::perspective(90.f, WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 1000.f);
 	glm::mat4 V = glm::lookAt(glm::vec3(0.f,0.f,0.f), glm::vec3(0.f, 0.f, -1.f), glm::vec3(0.f,1.f,0.f));
 	glm::mat4 VP = P*V;
 	
 	// Recuperation des variables uniformes
 	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
+	GLint NormSumLocation = glGetUniformLocation(program, "uNormSum");
+	
 	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
@@ -359,9 +382,10 @@ int main(int argc, char** argv){
 						//std::cout << "nombre d'intersection cube " << currentIndex << " : " << tabVoxel[currentIndex].nbFaces << std::endl;
 						glm::mat4 aCubeMVP = glm::translate(MVP, glm::vec3(i*cubeSize-(GRID_3D_SIZE-cubeSize)/2, j*cubeSize-(GRID_3D_SIZE-cubeSize)/2, k*cubeSize-(GRID_3D_SIZE-cubeSize)/2)); //PLACEMENT OF EACH GRID CUBE
 						aCubeMVP = glm::scale(aCubeMVP, glm::vec3(cubeSize)); // RE-SCALE EACH GRID CUBE
+						
 						glUniformMatrix4fv(MVPLocation, 1, GL_FALSE, glm::value_ptr(aCubeMVP));
-					
 						glUniform2i(NbIntersectionLocation, currentNbIntersection, nbIntersectionMax);
+						glUniform3f(NormSumLocation, tabVoxel[currentIndex].sumNormal.x, tabVoxel[currentIndex].sumNormal.y, tabVoxel[currentIndex].sumNormal.z);
 					
 						glBindVertexArray(cubeVAO);
 							glDrawArrays(GL_TRIANGLES, 0, aCube.nbVertices);
@@ -434,6 +458,13 @@ int main(int argc, char** argv){
 						case SDLK_SPACE:
 						break;
 						
+						case SDLK_n:
+							resetShaderProgram(programNorm, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation);
+							break;
+							
+						case SDLK_i:
+							resetShaderProgram(programInter, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation);
+							break;
 						
 						default:
 						break;
