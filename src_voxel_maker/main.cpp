@@ -178,40 +178,46 @@ bool processIntersectionOtherPlanesVoxel(Face testedFace, Voxel currentVoxel){
 }
 
 /* Main calculation of the intersection between the face and a voxel */
-bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel){
+bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel, uint32_t mode){
 	/* vertex Bounding sphere radius and edge bounding cylinder radius */
 	double Rc = currentVoxel.size * HALF_SQRT_3;
 
-	/* Vertices tests */
-	if(processIntersectionVertexVoxel(testedFace.s1, currentVoxel, Rc)){ return true;}
-	if(processIntersectionVertexVoxel(testedFace.s2, currentVoxel, Rc)){ return true;}
-	if(processIntersectionVertexVoxel(testedFace.s3, currentVoxel, Rc)){ return true;}
-
-	/* Edges tests */
-	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
-	if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
-	if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
-
-	/* Face test */
-	if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) || processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
-		return true;
+	if((mode == 1)||(mode==0)){
+		/* Vertices tests */
+		if(processIntersectionVertexVoxel(testedFace.s1, currentVoxel, Rc)){ return true;}
+		if(processIntersectionVertexVoxel(testedFace.s2, currentVoxel, Rc)){ return true;}
+		if(processIntersectionVertexVoxel(testedFace.s3, currentVoxel, Rc)){ return true;}
 	}
-
+	else if((mode ==2)||(mode==0)){
+		/* Edges tests */
+		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
+		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
+		if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
+	}
+	else if((mode == 3)||(mode==0)){
+		/* Face test */
+		if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) || processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
+			return true;
+		}
+	}
 	return false;
 }
 
 void printHelp(){
 	std::cout << std::endl << "############## HELP ##############" << std::endl;
 	std::cout << "usage : ./bin/hg_voxel_maker <number of subdivisions> -<option>" << std::endl << std::endl;
-	std::cout << "You can put several options at the same time. Options available :" << std::endl;
-	std::cout << "-n : the normal of the faces are stocked in the voxel_data file" << std::endl;
-	std::cout << "-b : the bending coefficient of the faces are stocked in the voxel_data file" << std::endl;
-	std::cout << "-g : the gradients of the faces are stocked in the voxel_data file" << std::endl;
-	std::cout << "-s : the surface area of the faces are stocked in the voxel_data file" << std::endl;
-	std::cout << "-d : the drain of the faces are stocked in the voxel_data file" << std::endl;
+	std::cout << "You can put several options at the same time. Options available :" << std::endl<<std::endl;
+	std::cout << "-vtx : testing the intersections regarding the vertices of the faces" << std::endl;	
+	std::cout << "-edg : testing the intersections regarding the edges of the faces" << std::endl;	
+	std::cout << "-pln : testing the intersections regarding the planes of the faces" << std::endl;	
+	std::cout << "#DEFAULT : intersections regarding the vertices, the edges and the planes." << std::endl<<std::endl;	
+	std::cout << "-n : saving the faces normals in the voxel_data file" << std::endl;
+	std::cout << "-b : saving the bending coefficients in the voxel_data file" << std::endl;
+	std::cout << "-g : saving the faces gradients in the voxel_data file" << std::endl;
+	std::cout << "-s : saving the surfaces in the voxel_data file" << std::endl;
+	std::cout << "-d : saving the drain coefficients in the voxel_data file" << std::endl;
 	std::cout << "##################################" << std::endl << std::endl;
 }
-
 /*************************************/
 /*             MAIN                  */
 /*************************************/
@@ -293,11 +299,12 @@ int main(int argc, char** argv) {
 
 	uint32_t nbSub = 0;
 	int p4Requested = 0;
-	int d = 0;
-	int g = 0;
-	int s = 0;
-	int b = 0;
+	int drain = 0;
+	int gradient = 0;
+	int surface = 0;
+	int bending = 0;
 	int normal = 0;
+	int mode = 0;
 
 	if(argc > 1){
 		char** tabArguments = new char*[argc];
@@ -313,34 +320,54 @@ int main(int argc, char** argv) {
 				printHelp();
 			}
 
+			//intersection with vertices
+			else if (strcmp(tabArguments[i], "-vtx") == 0){
+				if(!normal && !p4Requested && mode==0) std::cout << "############ REQUESTS ############" << std::endl;
+				std::cout << "-> Requested : intersections regarding the vertices" << std::endl;
+				mode = 1;
+			}
+			//intersection with edges
+			else if (strcmp(tabArguments[i], "-edg") == 0){
+				if(!normal && !p4Requested && mode==0) std::cout << "############ REQUESTS ############" << std::endl;
+				std::cout << "-> Requested : intersections regarding the edges" << std::endl;
+				mode = 2;
+			}
+			//intersection with planes
+			else if (strcmp(tabArguments[i], "-pln") == 0){
+				if(!normal && !p4Requested && mode==0) std::cout << "############ REQUESTS ############" << std::endl;
+				std::cout << "-> Requested : intersections regarding the planes" << std::endl;
+				mode = 3;
+			}
+
 			//normals requested
 			else if(strcmp(tabArguments[i],"-n") == 0){
-				if(!normal && !p4Requested) std::cout << std::endl << "############ REQUESTS ############" << std::endl;
+				if(!normal && !p4Requested && mode==0) std::cout << std::endl << "############ REQUESTS ############" << std::endl;
 				std::cout << "-> Requested : loading of the normals" << std::endl;
 				normal = 1;
 			}
+
 			else if ((strcmp(tabArguments[i],"-d") == 0)||(strcmp(tabArguments[i],"-b") == 0)||(strcmp(tabArguments[i],"-g") == 0)||(strcmp(tabArguments[i],"-s") == 0)) {
-				if(!normal && !p4Requested) std::cout << "############ REQUESTS ############" << std::endl;
+				if(!normal && !p4Requested && mode==0) std::cout << "############ REQUESTS ############" << std::endl;
 				p4Requested = 1;
 				//drain coeff requested
 				if (strcmp(tabArguments[i],"-d") == 0){
 					std::cout << "-> Requested : loading of the drain coefficients" << std::endl;
-					d = 1;
+					drain = 1;
 				}
 				//bending coeff requested
 				else if (strcmp(tabArguments[i],"-b") == 0){
 					std::cout << "-> Requested : loading of the bending coefficients" << std::endl;
-					b = 1;
+					bending = 1;
 				}
 				//surfaces requested
 				else if (strcmp(tabArguments[i],"-s") == 0){
 					std::cout << "-> Requested : loading of the surfaces" << std::endl;
-					s = 1;
+					surface = 1;
 				}
 				//gradients requested
 				else{
 					std::cout << "-> Requested : loading of the gradient coefficients" << std::endl;
-					g = 1;
+					gradient = 1;
 				}
 			}
 			else{
@@ -349,7 +376,7 @@ int main(int argc, char** argv) {
 			}
 		}
 		delete[] tabArguments;
-		if(p4Requested||normal) std::cout << "##################################" << std::endl << std::endl;
+		if(p4Requested||normal||mode!=0) std::cout << "##################################" << std::endl << std::endl;
 	}else printHelp();
 
 	FILE* normalFile = NULL;
@@ -399,16 +426,16 @@ int main(int argc, char** argv) {
 			test_fic = fread(&(otherData[3*n]), sizeof(double), 3, page4File);
 		}
 
-		if(d){
+		if(drain){
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].drain = drainData[n];
 		}
-		if(b){	
+		if(bending){	
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].bending = otherData[n*3];
 		}
-		if(s){
+		if(surface){
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].surface = otherData[n*3+1];
 		}
-		if(g){
+		if(gradient){
 			for(uint32_t n=0;n<nbFace;++n) tabF[n].gradient = otherData[n*3+2];
 		}
 	}
@@ -455,10 +482,10 @@ int main(int argc, char** argv) {
 	for(uint32_t n=0;n<tailleTabVoxel;++n){
 		tabVoxel[n].nbFaces=0;
 		tabVoxel[n].sumNormal = glm::dvec3(0,0,0);
-		tabVoxel[d].sumDrain = 0;
-		tabVoxel[g].sumGradient = 0;
-		tabVoxel[s].sumSurface = 0;
-		tabVoxel[b].sumBending = 0;
+		tabVoxel[n].sumDrain = 0;
+		tabVoxel[n].sumGradient = 0;
+		tabVoxel[n].sumSurface = 0;
+		tabVoxel[n].sumBending = 0;
 	}
 
 	double voxelSize = GRID_3D_SIZE/(double)nbSub;
@@ -481,14 +508,14 @@ int main(int argc, char** argv) {
 			for(uint32_t j=minVoxelY;j<=maxVoxelY; ++j){
 				for(uint32_t i=minVoxelX;i<=maxVoxelX;++i){
 					Voxel vox = createVoxel(i*voxelSize -1, j*voxelSize -1, k*voxelSize -1, voxelSize);
-					if(processIntersectionPolygonVoxel(tabF[n], vox)){
+					if(processIntersectionPolygonVoxel(tabF[n], vox, mode)){
 						uint32_t currentIndex = i + nbSub*j + k*nbSub*nbSubY;
 						tabVoxel[currentIndex].nbFaces++;
 						if(normal) tabVoxel[currentIndex].sumNormal = glm::dvec3(tabVoxel[currentIndex].sumNormal.x + tabF[n].normal.x, tabVoxel[currentIndex].sumNormal.y + tabF[n].normal.y, tabVoxel[currentIndex].sumNormal.z + tabF[n].normal.z);
-						if(d) tabVoxel[currentIndex].sumDrain = tabVoxel[currentIndex].sumDrain + tabF[n].drain;
-						if(g) tabVoxel[currentIndex].sumGradient = tabVoxel[currentIndex].sumGradient + tabF[n].gradient;
-						if(s) tabVoxel[currentIndex].sumSurface = tabVoxel[currentIndex].sumSurface + tabF[n].surface;
-						if(b) tabVoxel[currentIndex].sumBending = tabVoxel[currentIndex].sumBending + tabF[n].bending;	
+						if(drain) tabVoxel[currentIndex].sumDrain = tabVoxel[currentIndex].sumDrain + tabF[n].drain;
+						if(gradient) tabVoxel[currentIndex].sumGradient = tabVoxel[currentIndex].sumGradient + tabF[n].gradient;
+						if(surface) tabVoxel[currentIndex].sumSurface = tabVoxel[currentIndex].sumSurface + tabF[n].surface;
+						if(bending) tabVoxel[currentIndex].sumBending = tabVoxel[currentIndex].sumBending + tabF[n].bending;	
 					} 						
 				}
 			}

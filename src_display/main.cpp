@@ -296,6 +296,8 @@ int main(int argc, char** argv){
 	if(!programInter || !programNorm){
 		glDeleteBuffers(1, &cubeVBO);
 		glDeleteVertexArrays(1, &cubeVAO);
+		delete[] tabVoxel;
+		delete[] tabVoxelMax;
 		return (EXIT_FAILURE);
 	}
 	
