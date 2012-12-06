@@ -8,7 +8,9 @@
 //differentes scenes
 enum SceneType{
 	HORIZ_PLAN = 0,
-	VERTI_PLAN = 1
+	VERTI_PLAN = 1,
+	SINGLE_TRI = 2,
+	STAIR = 3
 };
 
 /* writing the vertices and faces file */
@@ -88,6 +90,12 @@ int main(int argc, char** argv){
 		}else if(arg1 == "verp"){
 			input = VERTI_PLAN;
 			displayHelp = false;
+		}else if(arg1 == "singlet"){
+			input = SINGLE_TRI;
+			displayHelp = false;
+		}else if(arg1 == "stair"){
+			input = STAIR;
+			displayHelp = false;
 		}
 	}
 
@@ -106,6 +114,8 @@ int main(int argc, char** argv){
 		std::cout<<"\tType of <scene> :"<<std::endl;
 		std::cout<<"\t\t - horp : single horizontal plan"<<std::endl;
 		std::cout<<"\t\t - verp : single vertical plan"<<std::endl;
+		std::cout<<"\t\t - singlet : single horizontal triangle"<<std::endl;
+		std::cout<<"\t\t - stair : 3 plans drawing a stair"<<std::endl;
 		std::cout<<std::endl;
 		return (EXIT_FAILURE);
 	}
@@ -125,10 +135,10 @@ int main(int argc, char** argv){
 			nbFaces = 2;
 
 			v = new double[3*nbVertices];
-			v[0] = -0.9; v[1] = 0.9; v[2] = 0.1;		//1
-			v[3] = 0.9; v[4] = 0.9; v[5] = 0.1;		//2
-			v[6] = 0.9; v[7] = -0.9; v[8] = 0.1;		//3
-			v[9] = -0.9; v[10] = -0.9; v[11] = 0.1;	//4
+			v[0] = -0.9; v[1] = 0.9; v[2] = 0.;		//1
+			v[3] = 0.9; v[4] = 0.9; v[5] = 0.;		//2
+			v[6] = 0.9; v[7] = -0.9; v[8] = 0.;		//3
+			v[9] = -0.9; v[10] = -0.9; v[11] = 0.;	//4
 
 			f = new uint32_t[3*nbFaces];
 			f[0] = 1; f[1] = 2; f[2] = 3;
@@ -147,11 +157,110 @@ int main(int argc, char** argv){
 			nF[3] = 0.; nF[4] = 0.; nF[5] = 1.;	
 
 			writeNormalFile(nbVertices, nbFaces, nV, nF, outputFileName);
+		break;
 
+		case SINGLE_TRI:
+			std::cout<<"Generating 'singlet' terrain :"<<std::endl;
+			nbVertices = 3;
+			nbFaces = 1;
+
+			v = new double[3*nbVertices];
+			v[0] = -0.9; v[1] = 0.9; v[2] = 0.;		//1
+			v[3] = 0.9; v[4] = 0.9; v[5] = 0.5;		//2
+			v[6] = 0.9; v[7] = -0.9; v[8] = 0.;		//3
+
+			f = new uint32_t[3*nbFaces];
+			f[0] = 1; f[1] = 2; f[2] = 3;
+
+			writeVerticesAndFacesFile(nbVertices, nbFaces, v, f, outputFileName);
+
+			nV = new double[3*nbVertices];
+			nV[0] = -0.9; nV[1] = -0.9; nV[2] = 3.24;		//1
+			nV[3] = -0.9; nV[4] = -0.9; nV[5] = 3.24;		//2
+			nV[6] = -0.9; nV[7] = -0.9; nV[8] = 3.24;		//3
+
+			nF = new double[3*nbFaces];
+			nF[0] = -0.9; nF[1] = -0.9; nF[2] = 3.24;
+
+			writeNormalFile(nbVertices, nbFaces, nV, nF, outputFileName);
 		break;
 
 		case VERTI_PLAN:
-			std::cout<<"YUUUPER!"<<std::endl;
+			std::cout<<"Generating 'verp' terrain :"<<std::endl;
+			nbVertices = 4;
+			nbFaces = 2;
+
+			v = new double[3*nbVertices];
+			v[0] = 0.; v[1] = 0.9; v[2] = -0.9;		//1
+			v[3] = 0.; v[4] = 0.9; v[5] = 0.9;		//2
+			v[6] = 0.; v[7] = -0.9; v[8] = 0.9;		//3
+			v[9] = 0.; v[10] = -0.9; v[11] = -0.9;	//4
+
+			f = new uint32_t[3*nbFaces];
+			f[0] = 1; f[1] = 2; f[2] = 3;
+			f[3] = 3; f[4] = 4; f[5] = 1;
+
+			writeVerticesAndFacesFile(nbVertices, nbFaces, v, f, outputFileName);
+
+			nV = new double[3*nbVertices];
+			nV[0] = 1.; nV[1] = 0.; nV[2] = 0.;		//1
+			nV[3] = 1.; nV[4] = 0.; nV[5] = 0.;		//2
+			nV[6] = 1.; nV[7] = 0.; nV[8] = 0.;		//3
+			nV[9] = 1.; nV[10] = 0.; nV[11] = 0.;	//4
+
+			nF = new double[3*nbFaces];
+			nF[0] = -1.; nF[1] = 0.; nF[2] = 0.;
+			nF[3] = -1.; nF[4] = 0.; nF[5] = 0.;	
+
+			writeNormalFile(nbVertices, nbFaces, nV, nF, outputFileName);
+		break;
+
+		case STAIR:
+			std::cout<<"Generating 'stair' terrain :"<<std::endl;
+			nbVertices = 8;
+			nbFaces = 6;
+
+			v = new double[3*nbVertices];
+			v[0] = -0.5; v[1] = 0.5; v[2] = 0.5;		//1
+			v[3] = 0.; v[4] = 0.5; v[5] = 0.5;			//2
+			v[6] = 0.; v[7] = -0.5; v[8] = 0.5;			//3
+			v[9] = -0.5; v[10] = -0.5; v[11] = 0.5;		//4
+			v[12] = 0.; v[13] = 0.5; v[14] = -0.5;		//5
+			v[15] = 0.5; v[16] = 0.5; v[17] = -0.5;		//6
+			v[18] = 0.5; v[19] = -0.5; v[20] = -0.5;	//7
+			v[21] = 0.; v[22] = -0.5; v[23] = -0.5;		//8
+
+
+
+			f = new uint32_t[3*nbFaces];
+			f[0] = 1; f[1] = 2; f[2] = 3;
+			f[3] = 3; f[4] = 4; f[5] = 1;
+			f[6] = 2; f[7] = 5; f[8] = 8;
+			f[9] = 8; f[10] = 3; f[11] = 2;
+			f[12] = 5; f[13] = 6; f[14] = 7;
+			f[15] = 7; f[16] = 8; f[17] = 5;
+
+			writeVerticesAndFacesFile(nbVertices, nbFaces, v, f, outputFileName);
+
+			nV = new double[3*nbVertices];
+			nV[0] = 0.; nV[1] = 0.; nV[2] = 1.;			//1
+			nV[3] = 1.; nV[4] = 0.; nV[5] = 1.;			//2
+			nV[6] = 1.; nV[7] = 0.; nV[8] = 1.;			//3
+			nV[9] = 0.; nV[10] = 0.; nV[11] = 1.;		//4
+			nV[12] = 1.; nV[13] = 0.; nV[14] = 1.;		//5
+			nV[15] = 0.; nV[16] = 0.; nV[17] = 1.;		//6
+			nV[18] = 0.; nV[19] = 0.; nV[20] = 1.;		//7
+			nV[21] = 1.; nV[22] = 0.; nV[23] = 1.;		//8
+
+			nF = new double[3*nbFaces];
+			nF[0] = 0.; nF[1] = 0.; nF[2] = 1.;
+			nF[3] = 0.; nF[4] = 0.; nF[5] = 1.;
+			nF[6] = 1.; nF[7] = 0.; nF[8] = 0.;
+			nF[9] = 1.; nF[10] = 0.; nF[11] = 0.;
+			nF[12] = 0.; nF[13] = 0.; nF[14] = 1.;
+			nF[15] = 0.; nF[16] = 0.; nF[17] = 1.;	
+
+			writeNormalFile(nbVertices, nbFaces, nV, nF, outputFileName);
 		break;
 
 		default:

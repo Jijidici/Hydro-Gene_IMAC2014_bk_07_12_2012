@@ -7,8 +7,8 @@
 #include <omp.h>
 #include "types.hpp"
 
-#define HALF_SQRT_3 0.866025404
-
+static const double HALF_SQRT_3 = sqrt(3)/2.;
+static const double TWO_TIERS_SQRT_3 = 2*sqrt(3)/3.;
 static const size_t GRID_3D_SIZE = 2;
 
 /******************************************/
@@ -77,13 +77,18 @@ double relativePositionVertexFace(Plane p, glm::dvec3 vx){
 	return glm::dot(referentVector, p.normal);
 }
 
+double vecNorm(glm::dvec3 v){
+	return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+}
+
 /************************/
 /******INTERSECTION******/
 /************************/
 /* Calculation of intersection between a vertex of the face and the voxel */
 bool processIntersectionVertexVoxel(Vertex* v, Voxel vox, double threshold){
 	/* if the center of the voxel is inside a bounding sphere with a radius of threshold, turn it on */
-	if(glm::distance(v->pos, vox.c) < threshold){
+	glm::dvec3 vertexVoxCenter = createVector(v->pos, vox.c);
+	if(vecNorm(vertexVoxCenter) < threshold){
 		return true;
 	}
 	return false;
@@ -93,22 +98,22 @@ bool processIntersectionVertexVoxel(Vertex* v, Voxel vox, double threshold){
 bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double threshold){
 	/* Projection of the voxel center on the edge */
 	glm::dvec3 edgeDir = createVector(v1->pos, v2->pos);
-	double edgeLength = glm::length(edgeDir);
+	double edgeLength = vecNorm(edgeDir);
 	/* case where the segment is a point */
 	if(edgeLength <= 0){
 		return false;
 	}
 
 	glm::dvec3 edgeDiff = createVector(v1->pos, vox.c);
-	float t = glm::dot(edgeDiff, edgeDir)/glm::dot(edgeDir, edgeDir);
+	float t = glm::dot(edgeDiff, edgeDir);
 	/* If the projected isn't on the segment */
-	if(t<0. || t>edgeLength){
+	if(t<0. || t>1.){
 		return false;
 	}
 	glm::dvec3 voxCProjected = glm::dvec3(v1->pos.x + t*edgeDir.x, v1->pos.y + t*edgeDir.y, v1->pos.z + t*edgeDir.z);
 
 	/* if the center of the voxel is inside a bounding cylinder with a radius of threshold, turn it on */
-	if(glm::distance(vox.c, voxCProjected) < threshold){
+	if(vecNorm(createVector(vox.c, voxCProjected)) < threshold){
 		return true;
 	}
 	return false;
@@ -116,61 +121,43 @@ bool processIntersectionEdgeVoxel(Vertex* v1, Vertex* v2, Voxel vox, double thre
 
 /* Calculation of intersections between the main plane and the voxel */
 bool processIntersectionMainPlaneVoxel(Face testedFace, Voxel currentVoxel){
-	/* Choose the good diagonal to calculate alpha angle */
-	double cRelativity = relativePositionVertexFace(testedFace, currentVoxel.c);
-	double halfVoxelSize = currentVoxel.size/2.;
+	/* Calculate the threshold normals and its inverse */
+	glm::dvec3 normalizeN = glm::normalize(testedFace.normal);
+	glm::dvec3 thresholdNormal = TWO_TIERS_SQRT_3 * currentVoxel.size * normalizeN;
+	/* Define the upper and lower plane which surround the triangle face */
+	Plane G = createPlane(testedFace.s3->pos + thresholdNormal, testedFace.s2->pos + thresholdNormal, testedFace.s1->pos + thresholdNormal);
+	Plane H = createPlane(testedFace.s1->pos - thresholdNormal, testedFace.s2->pos - thresholdNormal, testedFace.s3->pos - thresholdNormal);
 
-	/* to calculate voxel vertices */
-	int8_t coef1 = -1;
-	int8_t coef2 = -1;
-	int8_t coef3 = -1;
-	glm::dvec3 v;
-	int8_t i;
-	for(i=0;i<8;++i){
-		v = glm::dvec3(currentVoxel.c.x + coef1*halfVoxelSize, currentVoxel.c.y + coef2*halfVoxelSize, currentVoxel.c.z + coef3*halfVoxelSize);
-		/* check if the current vertex is on the other side of the plan that the center */
-		if(cRelativity * relativePositionVertexFace(testedFace, v)  >= 0){
-			break;
-		}
-		coef1 *= -1;
-		if(coef1 == -1){ 
-			coef2 *= -1;
-			if(coef2 == -1){ coef3 *= -1; }
-		}
+	/* Test if the center of the voxel is between the two plane */
+	double cRelativityG = relativePositionVertexFace(G, currentVoxel.c);
+	double cRelativityH = relativePositionVertexFace(H, currentVoxel.c);
+
+	//std::cout<<"//-> rel G : "<<cRelativityG<<" || rel H : "<<cRelativityH<<std::endl;
+
+	/* If it's the case, the voxel center is in the bounding plane */
+	if((cRelativityG <=0 && cRelativityH <=0) || (cRelativityG >=0 && cRelativityH >=0)){
+		return true;
 	}
 
-	/* if no vertex are on the other side, don't put the cube on */
-	if(i == 8){ return false; }
-
-	//construction of the diagonal
-	glm::dvec3 diagonal = createVector(v, currentVoxel.c);
-	double cosAlpha = glm::dot(testedFace.normal, diagonal) / (glm::length(testedFace.normal)*glm::length(diagonal));
-
-	//calculate the plane ordonate d
-	double d = - testedFace.normal.x*testedFace.s1->pos.x - testedFace.normal.y*testedFace.s1->pos.y - testedFace.normal.z*testedFace.s1->pos.z; 
-
-	//real test
-	double threshold = currentVoxel.size*HALF_SQRT_3*cosAlpha;
-	double testedValue = testedFace.normal.x*currentVoxel.c.x + testedFace.normal.y*currentVoxel.c.y + testedFace.normal.z*currentVoxel.c.z + d;
-	if(testedValue <= threshold && testedValue >= -threshold){return true;}
 	return false;
 }
 
 /* Calculate if the voxel center is in the Ei prism */
 bool processIntersectionOtherPlanesVoxel(Face testedFace, Voxel currentVoxel){
 	/* Define the three perpendicular planes to the trangle Face passing by each edge */
-	Plane e1 = createPlane(testedFace.s1->pos, testedFace.s2->pos, testedFace.s1->pos + testedFace.normal);
-	Plane e2 = createPlane(testedFace.s1->pos, testedFace.s3->pos, testedFace.s1->pos + testedFace.normal);
-	Plane e3 = createPlane(testedFace.s2->pos, testedFace.s3->pos, testedFace.s2->pos + testedFace.normal);
+	Plane e1 = createPlane(testedFace.s1->pos, testedFace.s2->pos, testedFace.s2->pos + testedFace.normal);
+	Plane e2 = createPlane(testedFace.s2->pos, testedFace.s3->pos, testedFace.s3->pos + testedFace.normal);
+	Plane e3 = createPlane(testedFace.s3->pos, testedFace.s1->pos, testedFace.s1->pos + testedFace.normal);
 
 	/* Test if the center of the voxel is on the same side of the tree plan */
 	double cRelativityE1 = relativePositionVertexFace(e1, currentVoxel.c);
 	double cRelativityE2 = relativePositionVertexFace(e2, currentVoxel.c);
 	double cRelativityE3 = relativePositionVertexFace(e3, currentVoxel.c);
 
+	//std::cout<<"//-> rel E1 : "<<cRelativityE1<<" || rel E2 : "<<cRelativityE2<<" || rel E3 : "<<cRelativityE3<<std::endl;
+
 	/* If it's the case, the voxel center is in the Ei prism */
-	if((cRelativityE1 <=0 && cRelativityE2 <=0 && cRelativityE3 <=0) &&
-	   (cRelativityE1 >=0 && cRelativityE2 >=0 && cRelativityE3 >=0)){
+	if((cRelativityE1 <=0 && cRelativityE2 <=0 && cRelativityE3 <=0) || (cRelativityE1 >=0 && cRelativityE2 >=0 && cRelativityE3 >=0)){
 		return true;
 	}
 
@@ -180,26 +167,26 @@ bool processIntersectionOtherPlanesVoxel(Face testedFace, Voxel currentVoxel){
 /* Main calculation of the intersection between the face and a voxel */
 bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel, uint32_t mode){
 	/* vertex Bounding sphere radius and edge bounding cylinder radius */
-	double Rc = currentVoxel.size * HALF_SQRT_3;
+	double Rc = currentVoxel.size * TWO_TIERS_SQRT_3;
 
-	if((mode == 1)||(mode==0)){
+	//if((mode == 1)||(mode==0)){
 		/* Vertices tests */
 		if(processIntersectionVertexVoxel(testedFace.s1, currentVoxel, Rc)){ return true;}
 		if(processIntersectionVertexVoxel(testedFace.s2, currentVoxel, Rc)){ return true;}
 		if(processIntersectionVertexVoxel(testedFace.s3, currentVoxel, Rc)){ return true;}
-	}
-	else if((mode ==2)||(mode==0)){
+	//}
+	//else if((mode ==2)||(mode==0)){
 		/* Edges tests */
 		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
 		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
 		if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
-	}
-	else if((mode == 3)||(mode==0)){
+	//}
+	//else if((mode == 3)||(mode==0)){
 		/* Face test */
-		if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) || processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
+		if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) && processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
 			return true;
 		}
-	}
+	//}
 	return false;
 }
 
@@ -397,7 +384,7 @@ int main(int argc, char** argv) {
 	test_fic = fread(normalData, sizeof(double), 3*nbFace, normalFile);
 
 	for(uint32_t n=0;n<nbFace;++n){
-		tabF[n].normal = glm::vec3(normalData[3*n], normalData[3*n+2], normalData[3*n+1]);
+		tabF[n].normal = glm::dvec3(normalData[3*n], normalData[3*n+2], normalData[3*n+1]);
 	}
 
 	fclose(normalFile);
