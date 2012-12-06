@@ -87,7 +87,7 @@ uint32_t increaseTab(uint32_t nbSub, VoxelData *tabVoxel, uint32_t nbSubMax, Vox
 	return nbIntersectionMax;
 }
 
-void resetShaderProgram(GLuint &program, GLint &MVPLocation, glm::mat4 &P, glm::mat4 &V, glm::mat4 &VP, GLint &NbIntersectionLocation, GLint &NormSumLocation){
+void resetShaderProgram(GLuint &program, GLint &MVPLocation, glm::mat4 &P, glm::mat4 &V, glm::mat4 &VP, GLint &NbIntersectionLocation, GLint &NormSumLocation, GLint &LightVectLocation){
 	glUseProgram(program);
 	
 	// Creation des Matrices
@@ -100,6 +100,7 @@ void resetShaderProgram(GLuint &program, GLint &MVPLocation, glm::mat4 &P, glm::
 	// Recuperation des variables uniformes
 	NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
 	NormSumLocation = glGetUniformLocation(program, "uNormSum");
+	LightVectLocation = glGetUniformLocation(program, "uLightVect");
 	
 }
 
@@ -316,7 +317,12 @@ int main(int argc, char** argv){
 	// Recuperation des variables uniformes
 	GLint NbIntersectionLocation = glGetUniformLocation(program, "uNbIntersection");
 	GLint NormSumLocation = glGetUniformLocation(program, "uNormSum");
+	GLint LightVectLocation = glGetUniformLocation(program, "uLightVect");
 	
+	glm::vec3 light(-1.f,0.5f,0.f);
+	float lightAngle = 0.05;
+	
+	//light = glm::translate(light, glm::vec3(0.f,1.f,0.f));
 	
 	// Creation des ressources OpenGL
 	glEnable(GL_DEPTH_TEST);
@@ -373,6 +379,14 @@ int main(int argc, char** argv){
 		MVP = glm::rotate(MVP, angleViewY + tmpAngleViewY,  glm::vec3(1.f, 0.f, 0.f)); //ROTATE WITH YCOORDS CLIC
 		
 		nbSubY = nbSub;
+		
+		
+		
+		light.x += lightAngle;
+		//light.z += lightAngle;
+		
+		glUniform3f(LightVectLocation, light.x, light.y, light.z);
+		
 		// Affichage de la grille
 		for(uint32_t k=0;k<nbSub;++k){
 			for(uint32_t j=0;j<nbSubY;++j){
@@ -461,11 +475,11 @@ int main(int argc, char** argv){
 						break;
 						
 						case SDLK_n:
-							resetShaderProgram(programNorm, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation);
+							resetShaderProgram(programNorm, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation, LightVectLocation);
 							break;
 							
 						case SDLK_i:
-							resetShaderProgram(programInter, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation);
+							resetShaderProgram(programInter, MVPLocation, P, V, VP, NbIntersectionLocation, NormSumLocation, LightVectLocation);
 							break;
 						
 						default:
