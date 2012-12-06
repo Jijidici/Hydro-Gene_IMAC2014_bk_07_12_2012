@@ -169,24 +169,24 @@ bool processIntersectionPolygonVoxel(Face testedFace, Voxel currentVoxel, uint32
 	/* vertex Bounding sphere radius and edge bounding cylinder radius */
 	double Rc = currentVoxel.size * TWO_TIERS_SQRT_3;
 
-	//if((mode == 1)||(mode==0)){
+	if((mode == 1)||(mode==0)){
 		/* Vertices tests */
 		if(processIntersectionVertexVoxel(testedFace.s1, currentVoxel, Rc)){ return true;}
 		if(processIntersectionVertexVoxel(testedFace.s2, currentVoxel, Rc)){ return true;}
 		if(processIntersectionVertexVoxel(testedFace.s3, currentVoxel, Rc)){ return true;}
-	//}
-	//else if((mode ==2)||(mode==0)){
+	}
+	if((mode ==2)||(mode==0)){
 		/* Edges tests */
 		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s2, currentVoxel, Rc)){return true;}
 		if(processIntersectionEdgeVoxel(testedFace.s1, testedFace.s3, currentVoxel, Rc)){return true;}
 		if(processIntersectionEdgeVoxel(testedFace.s2, testedFace.s3, currentVoxel, Rc)){return true;}
-	//}
-	//else if((mode == 3)||(mode==0)){
+	}
+	if((mode == 3)||(mode==0)){
 		/* Face test */
 		if(processIntersectionMainPlaneVoxel(testedFace, currentVoxel) && processIntersectionOtherPlanesVoxel(testedFace, currentVoxel)){
 			return true;
 		}
-	//}
+	}
 	return false;
 }
 
@@ -305,6 +305,7 @@ int main(int argc, char** argv) {
 
 			else if(strcmp(tabArguments[i],"help") == 0){
 				printHelp();
+				return(EXIT_SUCCESS);
 			}
 
 			//intersection with vertices
